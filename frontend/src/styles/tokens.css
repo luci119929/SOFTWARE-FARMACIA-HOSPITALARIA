@@ -1,0 +1,79 @@
+/* ---------------------------------------------------------------------------
+   MedLine — Sistema de diseño (sección 14)
+   Paleta médica (blanco / azul), colores semánticos y tematización clara/oscura.
+   Todos los pares texto/fondo buscan cumplir contraste WCAG AA.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* Marca */
+  --brand-50: #e8f2fb;
+  --brand-100: #cfe4f6;
+  --brand-300: #7bb8e8;
+  --brand-500: #0f6fc0; /* Azul médico principal */
+  --brand-600: #0c5ba0;
+  --brand-700: #074880;
+
+  /* Semánticos */
+  --ok: #1a8f5a; /* verde: positivo / stock sano */
+  --ok-soft: #e3f5ec;
+  --warn: #b7791f; /* ámbar: advertencia / vencimiento */
+  --warn-soft: #fbf1dd;
+  --danger: #c0392b; /* rojo: quiebre de stock */
+  --danger-soft: #fbe6e3;
+  --info: #0f6fc0;
+  --info-soft: #e8f2fb;
+
+  /* Radios y sombras */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(16, 32, 55, 0.08);
+  --shadow: 0 4px 16px rgba(16, 32, 55, 0.1);
+
+  --sidebar-w: 260px;
+  --topbar-h: 60px;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+/* Modo claro (por defecto) */
+:root,
+:root[data-theme='light'] {
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-2: #f8fafd;
+  --border: #e2e8f2;
+  --text: #12233b;
+  --text-muted: #5a6b82;
+  --text-inverse: #ffffff;
+  --sidebar-bg: #0d2440;
+  --sidebar-text: #c6d5e8;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active-bg: rgba(255, 255, 255, 0.12);
+  color-scheme: light;
+}
+
+/* Modo oscuro */
+:root[data-theme='dark'] {
+  --bg: #0b1626;
+  --surface: #12233b;
+  --surface-2: #172b46;
+  --border: #24395a;
+  --text: #eaf1f9;
+  --text-muted: #9db0cb;
+  --text-inverse: #0b1626;
+  --brand-500: #3b93d9;
+  --brand-600: #2f7fc0;
+  --sidebar-bg: #081221;
+  --sidebar-text: #a9bcd6;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active-bg: rgba(59, 147, 217, 0.22);
+  --ok-soft: rgba(26, 143, 90, 0.16);
+  --warn-soft: rgba(183, 121, 31, 0.18);
+  --danger-soft: rgba(192, 57, 43, 0.18);
+  --info-soft: rgba(59, 147, 217, 0.16);
+  --shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}

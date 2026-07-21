@@ -1,0 +1,211 @@
+// MedLine — Esquema de datos (Fase 1: Arquitectura Base)
+// Proveedor: SQLite para desarrollo sin configuración. En producción se
+// recomienda PostgreSQL (basta con cambiar el datasource). Los campos de tipo
+// "enum" se modelan como String con valores validados en la capa de dominio
+// (src/domain/enums.ts) para mantener portabilidad con SQLite.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 2-3. Autenticación y RBAC
+// ---------------------------------------------------------------------------
+
+model Role {
+  id          String           @id @default(cuid())
+  key         String           @unique // ADMIN, PHARMACY_CHIEF, PHARMACIST, WAREHOUSE, PURCHASING, AUDITOR
+  name        String
+  description String?
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique // p.ej. "inventory:read", "purchasing:approve"
+  module      String // agrupador lógico: inventory, purchasing, audit, users...
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique // Identidad = correo institucional
+  passwordHash String
+  fullName     String
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
+  isActive     Boolean    @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  movements    Movement[]
+  createdPOs   PurchaseOrder[] @relation("POCreatedBy")
+  approvedPOs  PurchaseOrder[] @relation("POApprovedBy")
+  auditEntries AuditLog[]
+}
+
+// ---------------------------------------------------------------------------
+// 4. Inventario y trazabilidad
+// ---------------------------------------------------------------------------
+
+model Supplier {
+  id           String        @id @default(cuid())
+  name         String
+  contactEmail String?
+  contactPhone String?
+  leadTimeDays Int           @default(7) // TE — Tiempo de Entrega por defecto
+  isActive     Boolean       @default(true)
+  items        Item[]
+  purchaseOrders PurchaseOrder[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Item {
+  id                  String   @id @default(cuid())
+  // Metadatos del medicamento (sección 4)
+  name                String
+  activeIngredient    String
+  manufacturer        String
+  presentation        String
+  concentration       String
+  therapeuticCategory String
+  // Clasificación farmacológica (sección 6)
+  abcClassification   String // A | B | C
+  venClassification   String // V | E | N
+  // Almacenamiento y cadena de frío
+  storageCondition    String // AMBIENT | REFRIGERATED
+  // Parámetros logísticos para el Motor de Compra (sección 9.1)
+  minimumThreshold    Int      @default(0) // umbral de stock crítico
+  maxStorageCapacity  Int      @default(0) // capacidad máxima (unidades) en destino
+  moq                 Int      @default(1) // Lote Mínimo de Compra
+  leadTimeDaysOverride Int?    // TE específico del ítem (sobrescribe el del proveedor)
+  supplierId          String?
+  supplier            Supplier? @relation(fields: [supplierId], references: [id])
+  batches             Batch[]
+  movements           Movement[]
+  alerts              Alert[]
+  poLines             PurchaseOrderLine[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Lote físico — habilita FEFO y el cálculo de Stock Útil vs. En Riesgo
+model Batch {
+  id               String   @id @default(cuid())
+  itemId           String
+  item             Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  batchNumber      String
+  expirationDate   DateTime // ISO-8601
+  availableQty     Int      @default(0)
+  physicalLocation String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([itemId, batchNumber])
+}
+
+// ---------------------------------------------------------------------------
+// 5. Libro mayor de movimientos (event-driven, append-only en la práctica)
+// ---------------------------------------------------------------------------
+
+model Movement {
+  id                  String   @id @default(cuid())
+  timestamp           DateTime @default(now())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id])
+  itemId              String
+  item                Item     @relation(fields: [itemId], references: [id])
+  batchId             String?
+  quantityDelta       Int // positivo = entrada, negativo = salida
+  movementType        String // ENTRY | EXIT | ADJUSTMENT | RETURN | INTERNAL_TRANSFER
+  sourceLocation      String?
+  destinationLocation String?
+  note                String?
+}
+
+// ---------------------------------------------------------------------------
+// 8. Alertas automatizadas
+// ---------------------------------------------------------------------------
+
+model Alert {
+  id         String   @id @default(cuid())
+  itemId     String
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type       String // CRITICAL_STOCK | EXPIRY_RISK | COLD_CHAIN_BREACH | ANOMALOUS_CONSUMPTION
+  severity   String // INFO | WARNING | CRITICAL
+  message    String
+  status     String   @default("OPEN") // OPEN | ACKNOWLEDGED | RESOLVED
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+}
+
+// ---------------------------------------------------------------------------
+// 9. Motor de compra inteligente
+// ---------------------------------------------------------------------------
+
+model PurchaseOrder {
+  id           String              @id @default(cuid())
+  code         String              @unique // p.ej. PO-2026-0001
+  status       String              @default("OPEN") // OPEN | SUBMITTED | APPROVED | RECEIVED | CANCELLED
+  supplierId   String?
+  supplier     Supplier?           @relation(fields: [supplierId], references: [id])
+  createdById  String
+  createdBy    User                @relation("POCreatedBy", fields: [createdById], references: [id])
+  approvedById String?
+  approvedBy   User?               @relation("POApprovedBy", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+  lines        PurchaseOrderLine[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model PurchaseOrderLine {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            Item          @relation(fields: [itemId], references: [id])
+  recommendedQty  Int // cantidad sugerida por el motor (EOQ ajustado)
+  orderedQty      Int // cantidad final tras aprobación / consolidación
+  rationale       String? // trazabilidad del cálculo (PP, SS, CDP...)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([purchaseOrderId, itemId]) // antiduplicidad a nivel de línea
+}
+
+// ---------------------------------------------------------------------------
+// 12. Registro de auditoría inmutable (append-only)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  actionType String // CREATE | UPDATE | DELETE | LOGIN | APPROVE | RECOMMEND ...
+  module     String
+  entity     String?
+  entityId   String?
+  previousValue String? // JSON serializado (Valor Anterior)
+  newValue      String? // JSON serializado (Nuevo Valor)
+}
