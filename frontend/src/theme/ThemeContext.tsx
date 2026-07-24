@@ -22,9 +22,9 @@ const ThemeContext = createContext<ThemeState | undefined>(undefined);
 function initialTheme(): Theme {
   const stored = localStorage.getItem(THEME_KEY) as Theme | null;
   if (stored === 'light' || stored === 'dark') return stored;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
+  // El modo oscuro es la identidad principal de marca: es el valor por defecto
+  // para usuarios nuevos. La preferencia se respeta una vez que el usuario elige.
+  return 'dark';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

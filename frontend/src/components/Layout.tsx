@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import { visibleModules } from '../rbac/navigation';
-import { IconLogout, IconMoon, IconPill, IconSun } from './icons';
+import { IconLogout, IconMoon, IconSun } from './icons';
+import { Wordmark } from './Wordmark';
 import '../styles/layout.css';
 
 function initials(name: string): string {
@@ -28,10 +29,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="shell">
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <span className="logo">
-            <IconPill size={20} />
-          </span>
-          MedLine
+          <Wordmark size={26} />
         </div>
         <nav className="sidebar-nav">
           {modules.map((m) => {
@@ -69,7 +67,7 @@ export function Layout({ children }: { children: ReactNode }) {
               ☰
             </button>
             <div>
-              <div style={{ fontWeight: 600 }}>
+              <div className="topbar-title">
                 {modules.find((m) => m.path === location.pathname)?.label ?? 'Panel'}
               </div>
               <div className="topbar-role">{user.role.name}</div>
@@ -87,9 +85,9 @@ export function Layout({ children }: { children: ReactNode }) {
             </button>
             <div className="user-chip">
               <div className="avatar">{initials(user.fullName)}</div>
-              <div style={{ lineHeight: 1.2 }}>
-                <div style={{ fontSize: '0.86rem', fontWeight: 600 }}>{user.fullName}</div>
-                <div className="topbar-role">{user.email}</div>
+              <div style={{ lineHeight: 1.3 }}>
+                <div className="user-chip-email">{user.email}</div>
+                <div className="topbar-role">{user.fullName}</div>
               </div>
             </div>
             <button className="icon-btn" onClick={logout} aria-label="Cerrar sesión" title="Cerrar sesión">

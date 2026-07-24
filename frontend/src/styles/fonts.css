@@ -1,0 +1,31 @@
+/* ---------------------------------------------------------------------------
+   Tipografías de marca MedLine
+   - Texto/cuerpo: Montserrat (auto-alojada vía @fontsource, importada en main.tsx)
+   - Títulos/logo: Dunkerque (fuente de marca)
+
+   Dunkerque es una fuente propia/comercial: colocá el archivo en
+   `frontend/public/fonts/` (ver el README de esa carpeta). Mientras no esté,
+   se usa Montserrat como sustituto para no romper el diseño; al agregar el
+   archivo, los títulos y el logo pasan a Dunkerque automáticamente.
+--------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Dunkerque';
+  src:
+    url('/fonts/Dunkerque.woff2') format('woff2'),
+    url('/fonts/Dunkerque.woff') format('woff'),
+    url('/fonts/Dunkerque.otf') format('opentype'),
+    url('/fonts/Dunkerque.ttf') format('truetype');
+  font-weight: 400 900;
+  font-display: swap;
+}
+
+:root {
+  --font-body: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Hasta tener Dunkerque, el fallback es Montserrat (bold) — mismo aire geométrico. */
+  --font-display: 'Dunkerque', 'Montserrat', system-ui, sans-serif;
+
+  /* Tracking según la guía de marca (valores negativos, texto compacto). */
+  --tracking-body: -0.02em; /* Montserrat, aprox. "letter spacing -69" adaptado a pantalla */
+  --tracking-display: -0.04em; /* Dunkerque, aprox. "letter spacing -130" adaptado a pantalla */
+}

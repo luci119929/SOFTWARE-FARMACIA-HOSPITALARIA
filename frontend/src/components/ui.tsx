@@ -24,12 +24,12 @@ export function PriorityBadge({ band, score }: { band: string; score: number }) 
   return <Badge tone={tone}>{score}</Badge>;
 }
 
-// --- Stat tile -------------------------------------------------------------
+// --- Stat tile (tarjeta con contorno y número neón, estilo de marca) -------
 const accentVar: Record<string, string> = {
   ok: 'var(--ok)',
   warn: 'var(--warn)',
   danger: 'var(--danger)',
-  info: 'var(--brand-500)',
+  info: 'var(--accent)',
 };
 export function Stat({
   label,
@@ -42,12 +42,12 @@ export function Stat({
   accent?: 'ok' | 'warn' | 'danger' | 'info';
   hint?: string;
 }) {
+  const color = accentVar[accent];
   return (
-    <div className="stat">
+    <div className="stat" style={{ borderColor: color }}>
+      <div className="stat-value" style={{ color }}>{value}</div>
       <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-      {hint && <div className="muted" style={{ fontSize: '0.82rem', marginTop: 4 }}>{hint}</div>}
-      <div className="stat-accent-bar" style={{ background: accentVar[accent] }} />
+      {hint && <div className="muted" style={{ fontSize: '0.8rem', marginTop: 6 }}>{hint}</div>}
     </div>
   );
 }

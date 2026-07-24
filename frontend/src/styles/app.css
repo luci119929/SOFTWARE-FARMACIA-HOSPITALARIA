@@ -1,4 +1,5 @@
 @import './tokens.css';
+@import './fonts.css';
 
 *,
 *::before,
@@ -16,12 +17,20 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
+  font-family: var(--font-body, var(--font-fallback));
+  letter-spacing: var(--tracking-body);
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
 }
 
+/* Textura de puntos (halftone) de marca, aplicable a fondos. */
+.dots-bg {
+  background-image: radial-gradient(var(--dot-color) 1.4px, transparent 1.5px);
+  background-size: 18px 18px;
+}
+
 a {
-  color: var(--brand-500);
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -30,8 +39,11 @@ h2,
 h3,
 h4 {
   margin: 0 0 0.4em;
-  line-height: 1.25;
+  line-height: 1.15;
   color: var(--text);
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-display);
+  font-weight: 700;
 }
 
 button {
@@ -39,39 +51,45 @@ button {
   cursor: pointer;
 }
 
-/* --- Botones ------------------------------------------------------------- */
+/* --- Botones (píldora) --------------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: 9px 16px;
-  font-weight: 600;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 10px 22px;
+  font-weight: 700;
   font-size: 0.9rem;
-  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s, transform 0.05s;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
 }
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--brand-500);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--brand-600);
+  filter: brightness(1.08);
 }
 .btn-ghost {
   background: transparent;
-  border-color: var(--border);
-  color: var(--text);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .btn-ghost:hover:not(:disabled) {
-  background: var(--surface-2);
+  background: var(--info-soft);
 }
 .btn-sm {
-  padding: 5px 11px;
+  padding: 6px 14px;
   font-size: 0.82rem;
 }
 
@@ -86,54 +104,52 @@ button {
   padding: 20px;
 }
 
-/* --- Stat tiles ---------------------------------------------------------- */
+/* --- Stat tiles (contorno neón) ------------------------------------------ */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 16px;
 }
 .stat {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 20px;
 }
 .stat-label {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
+  font-family: var(--font-display);
 }
 .stat-value {
-  font-size: 1.9rem;
-  font-weight: 700;
-  margin-top: 6px;
-}
-.stat-accent-bar {
-  height: 4px;
-  border-radius: 4px;
-  margin-top: 12px;
-  background: var(--brand-500);
+  font-size: 2.3rem;
+  font-weight: 800;
+  margin-top: 4px;
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
 }
 
-/* --- Badges -------------------------------------------------------------- */
+/* --- Badges (píldora) ---------------------------------------------------- */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
-  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 .badge-ok { background: var(--ok-soft); color: var(--ok); }
 .badge-warn { background: var(--warn-soft); color: var(--warn); }
 .badge-danger { background: var(--danger-soft); color: var(--danger); }
-.badge-info { background: var(--info-soft); color: var(--info); }
+.badge-info { background: var(--info-soft); color: var(--accent); }
 .badge-muted { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
 
 /* --- Tablas -------------------------------------------------------------- */
@@ -150,17 +166,19 @@ table.data {
 }
 table.data th {
   text-align: left;
-  padding: 12px 14px;
+  padding: 13px 15px;
   background: var(--surface-2);
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  font-family: var(--font-display);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 table.data td {
-  padding: 12px 14px;
+  padding: 13px 15px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -175,38 +193,50 @@ table.data tbody tr:hover {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
+  gap: 7px;
+  margin-bottom: 15px;
 }
 .field label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  font-family: var(--font-display);
 }
 input,
 select,
 textarea {
   font: inherit;
-  padding: 9px 11px;
+  letter-spacing: var(--tracking-body);
+  padding: 11px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
+  border-radius: var(--radius-pill);
+  background: var(--input-bg);
+  color: var(--input-text);
   width: 100%;
+}
+textarea {
+  border-radius: var(--radius);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid var(--brand-300);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
-  border-color: var(--brand-500);
+  border-color: var(--accent);
 }
 
 /* --- Utilidades ---------------------------------------------------------- */
-.page { padding: 24px 28px; max-width: 1280px; }
-.page-head { margin-bottom: 20px; }
-.page-title { font-size: 1.5rem; }
-.page-sub { color: var(--text-muted); font-size: 0.95rem; }
+.page { padding: 26px 30px; max-width: 1320px; }
+.page-head { margin-bottom: 22px; }
+.page-title { font-size: 1.7rem; }
+.page-sub { color: var(--text-muted); font-size: 0.95rem; letter-spacing: var(--tracking-body); }
 .row { display: flex; gap: 12px; align-items: center; }
 .between { justify-content: space-between; }
 .wrap { flex-wrap: wrap; }
@@ -214,7 +244,8 @@ textarea:focus {
 .mt-16 { margin-top: 16px; }
 .mt-24 { margin-top: 24px; }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-.mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 0.85em; }
+.mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 0.85em; letter-spacing: 0; }
+.uppercase { text-transform: uppercase; letter-spacing: 0.04em; }
 
 /* --- Motor de compra ----------------------------------------------------- */
 .engine-metrics {
@@ -222,9 +253,9 @@ textarea:focus {
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin-top: 14px;
-  padding: 12px;
+  padding: 14px;
   background: var(--surface-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
 }
 .engine-rec {
   display: flex;

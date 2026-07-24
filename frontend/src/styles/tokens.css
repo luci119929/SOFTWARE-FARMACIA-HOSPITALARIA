@@ -1,79 +1,108 @@
 /* ---------------------------------------------------------------------------
-   MedLine — Sistema de diseño (sección 14)
-   Paleta médica (blanco / azul), colores semánticos y tematización clara/oscura.
-   Todos los pares texto/fondo buscan cumplir contraste WCAG AA.
+   MedLine — Sistema de diseño según la Guía de Identidad Visual
+   Paleta: indigo profundo + menta (aqua), con semánticos neón.
+   El MODO OSCURO es la identidad principal de marca; el MODO CLARO es una
+   variante consistente que conserva la marca (menta + indigo).
 --------------------------------------------------------------------------- */
 
 :root {
-  /* Marca */
-  --brand-50: #e8f2fb;
-  --brand-100: #cfe4f6;
-  --brand-300: #7bb8e8;
-  --brand-500: #0f6fc0; /* Azul médico principal */
-  --brand-600: #0c5ba0;
-  --brand-700: #074880;
+  /* --- Colores de marca (fijos) --- */
+  --brand-indigo: #0e0447; /* fondo principal de marca */
+  --brand-indigo-deep: #0a0233;
+  --brand-mint: #00ffc2; /* acento principal */
+  --brand-mint-light: #9df5df; /* tinte para rellenos suaves / inputs */
+  --brand-white: #ffffff;
+  --brand-black: #000000;
 
-  /* Semánticos */
-  --ok: #1a8f5a; /* verde: positivo / stock sano */
-  --ok-soft: #e3f5ec;
-  --warn: #b7791f; /* ámbar: advertencia / vencimiento */
-  --warn-soft: #fbf1dd;
-  --danger: #c0392b; /* rojo: quiebre de stock */
-  --danger-soft: #fbe6e3;
-  --info: #0f6fc0;
-  --info-soft: #e8f2fb;
+  /* --- Semánticos neón (de la guía) --- */
+  --sem-red: #ff5757; /* crítico / vencido / quiebre */
+  --sem-amber: #ffbd58; /* advertencia / próximo a vencer */
+  --sem-green: #7dd957; /* sano / positivo */
 
-  /* Radios y sombras */
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(16, 32, 55, 0.08);
-  --shadow: 0 4px 16px rgba(16, 32, 55, 0.1);
+  /* Radios: la marca usa formas tipo píldora y esquinas suaves. */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
 
-  --sidebar-w: 260px;
-  --topbar-h: 60px;
+  --sidebar-w: 264px;
+  --topbar-h: 64px;
 
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+  --font-fallback: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Modo claro (por defecto) */
+/* ======================= MODO OSCURO (marca principal) ==================== */
 :root,
-:root[data-theme='light'] {
-  --bg: #f4f7fb;
-  --surface: #ffffff;
-  --surface-2: #f8fafd;
-  --border: #e2e8f2;
-  --text: #12233b;
-  --text-muted: #5a6b82;
-  --text-inverse: #ffffff;
-  --sidebar-bg: #0d2440;
-  --sidebar-text: #c6d5e8;
-  --sidebar-text-active: #ffffff;
-  --sidebar-active-bg: rgba(255, 255, 255, 0.12);
-  color-scheme: light;
+:root[data-theme='dark'] {
+  --bg: var(--brand-indigo);
+  --bg-deep: var(--brand-indigo-deep);
+  --surface: #160a52; /* paneles sobre el fondo */
+  --surface-2: #1d1063; /* superficies elevadas / hover */
+  --border: #2a1d74; /* bordes sutiles */
+  --border-strong: #00ffc2;
+
+  --text: #ffffff;
+  --text-muted: #b7aee8; /* lavanda tenue sobre indigo */
+  --text-on-mint: #0a0233; /* texto sobre botones menta */
+
+  --accent: var(--brand-mint);
+  --accent-contrast: #0a0233;
+  --input-bg: #1b0f60;
+  --input-text: #ffffff;
+
+  --sidebar-bg: #0c033c;
+  --sidebar-text: #b7aee8;
+  --sidebar-text-active: #0a0233;
+  --sidebar-active-bg: var(--brand-mint);
+
+  --ok: var(--sem-green);
+  --warn: var(--sem-amber);
+  --danger: var(--sem-red);
+  --ok-soft: rgba(125, 217, 87, 0.16);
+  --warn-soft: rgba(255, 189, 88, 0.16);
+  --danger-soft: rgba(255, 87, 87, 0.16);
+  --info-soft: rgba(0, 255, 194, 0.14);
+
+  /* Textura de puntos (halftone) del fondo. */
+  --dot-color: rgba(0, 255, 194, 0.10);
+  --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
 }
 
-/* Modo oscuro */
-:root[data-theme='dark'] {
-  --bg: #0b1626;
-  --surface: #12233b;
-  --surface-2: #172b46;
-  --border: #24395a;
-  --text: #eaf1f9;
-  --text-muted: #9db0cb;
-  --text-inverse: #0b1626;
-  --brand-500: #3b93d9;
-  --brand-600: #2f7fc0;
-  --sidebar-bg: #081221;
-  --sidebar-text: #a9bcd6;
-  --sidebar-text-active: #ffffff;
-  --sidebar-active-bg: rgba(59, 147, 217, 0.22);
-  --ok-soft: rgba(26, 143, 90, 0.16);
-  --warn-soft: rgba(183, 121, 31, 0.18);
-  --danger-soft: rgba(192, 57, 43, 0.18);
-  --info-soft: rgba(59, 147, 217, 0.16);
-  --shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  color-scheme: dark;
+/* ======================= MODO CLARO (variante de marca) =================== */
+:root[data-theme='light'] {
+  --bg: #f2f4fb;
+  --bg-deep: #e7eaf6;
+  --surface: #ffffff;
+  --surface-2: #f4f6fc;
+  --border: #dfe3f2;
+  --border-strong: #0e0447;
+
+  --text: #0e0447; /* indigo de marca como color de texto */
+  --text-muted: #5f5a86;
+  --text-on-mint: #0a0233;
+
+  --accent: #0aa583; /* menta oscurecida para contraste AA sobre blanco */
+  --accent-contrast: #ffffff;
+  --input-bg: #ffffff;
+  --input-text: #0e0447;
+
+  --sidebar-bg: #0e0447; /* la marca mantiene el sidebar oscuro */
+  --sidebar-text: #b7aee8;
+  --sidebar-text-active: #0a0233;
+  --sidebar-active-bg: var(--brand-mint);
+
+  --ok: #2f9e2f;
+  --warn: #b7791f;
+  --danger: #d33a3a;
+  --ok-soft: #e6f6e2;
+  --warn-soft: #fbf1dd;
+  --danger-soft: #fbe3e3;
+  --info-soft: #e0faf3;
+
+  --dot-color: rgba(14, 4, 71, 0.05);
+  --shadow: 0 8px 26px rgba(14, 4, 71, 0.12);
+  --shadow-sm: 0 1px 3px rgba(14, 4, 71, 0.08);
+  color-scheme: light;
 }

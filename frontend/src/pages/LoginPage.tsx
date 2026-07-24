@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
-import { IconPill } from '../components/icons';
+import { Wordmark } from '../components/Wordmark';
 import '../styles/login.css';
 
 const DEMO_USERS = [
@@ -43,10 +43,7 @@ export function LoginPage() {
     <div className="login-wrap">
       <div className="login-hero">
         <div className="login-brand">
-          <span className="login-logo">
-            <IconPill size={26} />
-          </span>
-          MedLine
+          <Wordmark size={40} color="#00ffc2" />
         </div>
         <h1>Gestión inteligente de farmacia hospitalaria</h1>
         <p>
@@ -61,14 +58,11 @@ export function LoginPage() {
       </div>
 
       <div className="login-panel">
-        <div className="login-card card">
-          <h2>Iniciar sesión</h2>
-          <p className="muted" style={{ marginTop: -4 }}>
-            Ingresá con tu correo institucional.
-          </p>
+        <div className="login-card">
+          <h2>Ingresar</h2>
           <form onSubmit={submit}>
             <div className="field">
-              <label htmlFor="email">Correo institucional</label>
+              <label htmlFor="email">Mail</label>
               <input
                 id="email"
                 type="email"
