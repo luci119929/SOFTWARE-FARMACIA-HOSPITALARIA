@@ -1,9 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { useTheme } from '../theme/ThemeContext';
 import { visibleModules } from '../rbac/navigation';
-import { IconLogout, IconMoon, IconSun } from './icons';
+import { IconLogout } from './icons';
 import { Wordmark } from './Wordmark';
 import '../styles/layout.css';
 
@@ -18,7 +17,6 @@ function initials(name: string): string {
 
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
-  const { theme, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -75,14 +73,6 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="row" style={{ gap: 12 }}>
-            <button
-              className="icon-btn"
-              onClick={toggle}
-              aria-label={theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'}
-              title={theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
-            >
-              {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
-            </button>
             <div className="user-chip">
               <div className="avatar">{initials(user.fullName)}</div>
               <div style={{ lineHeight: 1.3 }}>
