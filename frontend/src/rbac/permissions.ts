@@ -1,0 +1,24 @@
+// Espejo de las claves de permiso del backend (para gating de UI/rutas).
+// La AUTORIDAD sigue siendo el backend: la UI sólo decide qué mostrar.
+export const P = {
+  SYSTEM_CONFIGURE: 'system:configure',
+  INTEGRATIONS_MANAGE: 'integrations:manage',
+  USERS_READ: 'users:read',
+  USERS_CREATE: 'users:create',
+  USERS_UPDATE: 'users:update',
+  USERS_DELETE: 'users:delete',
+  PERMISSIONS_ASSIGN: 'permissions:assign',
+  INVENTORY_READ: 'inventory:read',
+  INVENTORY_MANAGE: 'inventory:manage',
+  INVENTORY_SUPPLY: 'inventory:supply',
+  LOCATIONS_MANAGE: 'locations:manage',
+  MOVEMENTS_CREATE: 'movements:create',
+  MOVEMENTS_READ: 'movements:read',
+  ALERTS_READ: 'alerts:read',
+  ANALYTICS_READ: 'analytics:read',
+  PURCHASING_READ: 'purchasing:read',
+  PURCHASING_MANAGE: 'purchasing:manage',
+  PURCHASING_APPROVE: 'purchasing:approve',
+  SUPPLIERS_MANAGE: 'suppliers:manage',
+  AUDIT_READ: 'audit:read',
+} as const;
