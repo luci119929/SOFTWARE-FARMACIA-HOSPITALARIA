@@ -121,3 +121,32 @@ inventoryRouter.post(
     return res.status(201).json({ item });
   }
 );
+
+// PATCH /inventory/:id — actualización parcial (incluye asociar proveedor).
+inventoryRouter.patch(
+  '/:id',
+  requirePermission(PERMISSIONS.INVENTORY_MANAGE),
+  async (req, res) => {
+    const parsed = itemSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.flatten() });
+    }
+    const before = await prisma.item.findUnique({ where: { id: req.params.id } });
+    if (!before) return res.status(404).json({ error: 'Ítem no encontrado' });
+
+    const item = await prisma.item.update({
+      where: { id: req.params.id },
+      data: parsed.data,
+    });
+    await recordAudit({
+      ...auditContext(req),
+      actionType: 'UPDATE',
+      module: 'inventory',
+      entity: 'Item',
+      entityId: item.id,
+      previousValue: before,
+      newValue: parsed.data,
+    });
+    return res.json({ item });
+  }
+);

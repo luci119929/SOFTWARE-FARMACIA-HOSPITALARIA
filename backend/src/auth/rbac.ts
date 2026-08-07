@@ -52,6 +52,7 @@ export const PERMISSIONS = {
   PURCHASING_READ: 'purchasing:read',
   PURCHASING_MANAGE: 'purchasing:manage',
   PURCHASING_APPROVE: 'purchasing:approve',
+  SUPPLIERS_READ: 'suppliers:read',
   SUPPLIERS_MANAGE: 'suppliers:manage',
   // Auditoría (solo lectura)
   AUDIT_READ: 'audit:read',
@@ -82,6 +83,7 @@ export const PERMISSION_DESCRIPTIONS: Record<PermissionKey, string> = {
   'purchasing:read': 'Revisar el Motor de Compra',
   'purchasing:manage': 'Gestionar órdenes de compra',
   'purchasing:approve': 'Aprobar órdenes de compra',
+  'suppliers:read': 'Consultar proveedores y su historial de compras',
   'suppliers:manage': 'Gestionar proveedores',
   'audit:read': 'Acceso de solo lectura al registro de auditoría',
   'returns:read': 'Consultar devoluciones',
@@ -112,6 +114,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.ALERTS_READ,
     PERMISSIONS.PURCHASING_READ,
     PERMISSIONS.PURCHASING_APPROVE,
+    PERMISSIONS.SUPPLIERS_READ,
     PERMISSIONS.RETURNS_READ,
     PERMISSIONS.RETURNS_PROCESS,
   ],
@@ -127,6 +130,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
   ],
   WAREHOUSE: [
     PERMISSIONS.INVENTORY_READ,
+    PERMISSIONS.INVENTORY_SUPPLY,
     PERMISSIONS.MOVEMENTS_CREATE,
     PERMISSIONS.MOVEMENTS_READ,
     PERMISSIONS.LOCATIONS_MANAGE,
@@ -135,8 +139,10 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
   ],
   PURCHASING: [
     PERMISSIONS.INVENTORY_READ,
+    PERMISSIONS.INVENTORY_SUPPLY,
     PERMISSIONS.PURCHASING_READ,
     PERMISSIONS.PURCHASING_MANAGE,
+    PERMISSIONS.SUPPLIERS_READ,
     PERMISSIONS.SUPPLIERS_MANAGE,
     PERMISSIONS.ANALYTICS_READ,
   ],

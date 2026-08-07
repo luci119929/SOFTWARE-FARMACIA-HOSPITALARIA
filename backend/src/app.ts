@@ -10,6 +10,7 @@ import { auditRouter } from './modules/audit.routes';
 import { usersRouter } from './modules/users.routes';
 import { metaRouter } from './modules/meta.routes';
 import { returnsRouter } from './modules/returns.routes';
+import { suppliersRouter } from './modules/suppliers.routes';
 
 export function createApp() {
   const app = express();
@@ -28,6 +29,7 @@ export function createApp() {
   app.use('/api/users', usersRouter);
   app.use('/api/meta', metaRouter);
   app.use('/api/returns', returnsRouter);
+  app.use('/api/suppliers', suppliersRouter);
 
   // Manejador de errores genérico.
   app.use(

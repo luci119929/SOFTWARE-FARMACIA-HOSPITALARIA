@@ -53,3 +53,26 @@ export function auditContext(
     roleKey: req.auth?.roleKey ?? null,
   };
 }
+
+/**
+ * Historial de cambios de una orden de compra (y sus líneas), reconstruido a
+ * partir del log inmutable — no requiere una tabla dedicada.
+ */
+export async function getPurchaseOrderHistory(orderId: string) {
+  const lines = await prisma.purchaseOrderLine.findMany({
+    where: { purchaseOrderId: orderId },
+    select: { id: true },
+  });
+  const lineIds = lines.map((l) => l.id);
+
+  return prisma.auditLog.findMany({
+    where: {
+      OR: [
+        { entity: 'PurchaseOrder', entityId: orderId },
+        { entity: 'PurchaseOrderLine', entityId: { in: lineIds } },
+      ],
+    },
+    include: { user: { select: { id: true, fullName: true } } },
+    orderBy: { timestamp: 'asc' },
+  });
+}

@@ -59,6 +59,7 @@ model User {
   movements    Movement[]
   createdPOs   PurchaseOrder[] @relation("POCreatedBy")
   approvedPOs  PurchaseOrder[] @relation("POApprovedBy")
+  rejectedPOs  PurchaseOrder[] @relation("PORejectedBy")
   auditEntries AuditLog[]
   returnsRequested StockReturn[] @relation("ReturnRequestedBy")
   returnsProcessed StockReturn[] @relation("ReturnProcessedBy")
@@ -71,8 +72,13 @@ model User {
 model Supplier {
   id           String        @id @default(cuid())
   name         String
+  contactName  String? // persona de contacto
   contactEmail String?
   contactPhone String?
+  address      String?
+  taxId        String? // identificación fiscal (CUIT/RUC/NIT)
+  paymentTerms String? // condiciones comerciales, p.ej. "30 días fecha factura"
+  notes        String?
   leadTimeDays Int           @default(7) // TE — Tiempo de Entrega por defecto
   isActive     Boolean       @default(true)
   items        Item[]
@@ -167,19 +173,24 @@ model Alert {
 // ---------------------------------------------------------------------------
 
 model PurchaseOrder {
-  id           String              @id @default(cuid())
-  code         String              @unique // p.ej. PO-2026-0001
-  status       String              @default("OPEN") // OPEN | SUBMITTED | APPROVED | RECEIVED | CANCELLED
-  supplierId   String?
-  supplier     Supplier?           @relation(fields: [supplierId], references: [id])
-  createdById  String
-  createdBy    User                @relation("POCreatedBy", fields: [createdById], references: [id])
-  approvedById String?
-  approvedBy   User?               @relation("POApprovedBy", fields: [approvedById], references: [id])
-  approvedAt   DateTime?
-  lines        PurchaseOrderLine[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id              String              @id @default(cuid())
+  code            String              @unique // p.ej. PO-2026-0001
+  status          String              @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | RECEIVED | CANCELLED
+  supplierId      String?
+  supplier        Supplier?           @relation(fields: [supplierId], references: [id])
+  createdById     String
+  createdBy       User                @relation("POCreatedBy", fields: [createdById], references: [id])
+  approvedById    String?
+  approvedBy      User?               @relation("POApprovedBy", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectedById    String?
+  rejectedBy      User?               @relation("PORejectedBy", fields: [rejectedById], references: [id])
+  rejectedAt      DateTime?
+  rejectionReason String?
+  receivedAt      DateTime?
+  lines           PurchaseOrderLine[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 }
 
 model PurchaseOrderLine {
@@ -190,6 +201,8 @@ model PurchaseOrderLine {
   item            Item          @relation(fields: [itemId], references: [id])
   recommendedQty  Int // cantidad sugerida por el motor (EOQ ajustado)
   orderedQty      Int // cantidad final tras aprobación / consolidación
+  receivedQty     Int           @default(0) // acumulado recibido (soporta recepciones parciales)
+  unitCost        Float? // costo pactado/real capturado al recibir
   rationale       String? // trazabilidad del cálculo (PP, SS, CDP...)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

@@ -3,7 +3,24 @@
 // Qué comprar, cuándo comprarlo y cuánto comprar.
 // -----------------------------------------------------------------------------
 import { VEN_WEIGHT } from './classification';
-import type { VenClass } from './enums';
+import type { PoStatus, VenClass } from './enums';
+
+// ---------------------------------------------------------------------------
+// Flujo de aprobación de órdenes de compra
+// ---------------------------------------------------------------------------
+const PO_TRANSITIONS: Record<PoStatus, PoStatus[]> = {
+  DRAFT: ['SUBMITTED', 'CANCELLED'],
+  SUBMITTED: ['APPROVED', 'REJECTED', 'CANCELLED'],
+  APPROVED: ['RECEIVED', 'CANCELLED'],
+  REJECTED: ['DRAFT'], // se puede reabrir y volver a enviar
+  RECEIVED: [],
+  CANCELLED: [],
+};
+
+/** Valida si una orden puede pasar de `current` a `target` según el flujo de aprobación. */
+export function canTransitionPoStatus(current: PoStatus, target: PoStatus): boolean {
+  return PO_TRANSITIONS[current]?.includes(target) ?? false;
+}
 
 /** Consumo Diario Promedio (CDP) — media móvil de unidades consumidas por día. */
 export function computeAverageDailyConsumption(
