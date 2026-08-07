@@ -7,7 +7,7 @@ import { BUSINESS_CONFIG } from '../config/constants';
 import { computeUsefulStock } from '../domain/inventory';
 import { buildRecommendation } from '../domain/purchasing';
 import { getDailyConsumption } from '../services/analytics';
-import { recordAudit } from '../services/audit';
+import { recordAudit, auditContext } from '../services/audit';
 import type { VenClass } from '../domain/enums';
 
 export const purchasingRouter = Router();
@@ -122,7 +122,7 @@ purchasingRouter.post(
           },
         });
         await recordAudit({
-          userId: req.auth!.userId,
+          ...auditContext(req),
           actionType: 'UPDATE',
           module: 'purchasing',
           entity: 'PurchaseOrderLine',
@@ -161,7 +161,7 @@ purchasingRouter.post(
       include: { lines: true },
     });
     await recordAudit({
-      userId: req.auth!.userId,
+      ...auditContext(req),
       actionType: 'CREATE',
       module: 'purchasing',
       entity: 'PurchaseOrder',
@@ -188,7 +188,7 @@ purchasingRouter.post(
       data: { status: 'APPROVED', approvedById: req.auth!.userId, approvedAt: new Date() },
     });
     await recordAudit({
-      userId: req.auth!.userId,
+      ...auditContext(req),
       actionType: 'APPROVE',
       module: 'purchasing',
       entity: 'PurchaseOrder',

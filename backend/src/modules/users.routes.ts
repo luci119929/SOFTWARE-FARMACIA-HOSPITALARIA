@@ -4,7 +4,7 @@ import { prisma } from '../db/prisma';
 import { authenticate, requirePermission } from '../auth/middleware';
 import { PERMISSIONS } from '../auth/rbac';
 import { hashPassword } from '../auth/passwords';
-import { recordAudit } from '../services/audit';
+import { recordAudit, auditContext } from '../services/audit';
 
 export const usersRouter = Router();
 
@@ -60,7 +60,7 @@ usersRouter.post(
       data: { email, fullName, roleId, passwordHash: await hashPassword(password) },
     });
     await recordAudit({
-      userId: req.auth!.userId,
+      ...auditContext(req),
       actionType: 'CREATE',
       module: 'users',
       entity: 'User',
@@ -91,7 +91,7 @@ usersRouter.patch(
 
     const user = await prisma.user.update({ where: { id: req.params.id }, data: parsed.data });
     await recordAudit({
-      userId: req.auth!.userId,
+      ...auditContext(req),
       actionType: 'UPDATE',
       module: 'users',
       entity: 'User',
@@ -113,7 +113,7 @@ usersRouter.delete(
 
     await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });
     await recordAudit({
-      userId: req.auth!.userId,
+      ...auditContext(req),
       actionType: 'DELETE',
       module: 'users',
       entity: 'User',

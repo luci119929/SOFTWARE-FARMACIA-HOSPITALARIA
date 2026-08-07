@@ -55,6 +55,10 @@ export const PERMISSIONS = {
   SUPPLIERS_MANAGE: 'suppliers:manage',
   // Auditoría (solo lectura)
   AUDIT_READ: 'audit:read',
+  // Devoluciones y logística inversa
+  RETURNS_READ: 'returns:read',
+  RETURNS_CREATE: 'returns:create',
+  RETURNS_PROCESS: 'returns:process',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -80,6 +84,10 @@ export const PERMISSION_DESCRIPTIONS: Record<PermissionKey, string> = {
   'purchasing:approve': 'Aprobar órdenes de compra',
   'suppliers:manage': 'Gestionar proveedores',
   'audit:read': 'Acceso de solo lectura al registro de auditoría',
+  'returns:read': 'Consultar devoluciones',
+  'returns:create': 'Registrar una devolución',
+  'returns:process':
+    'Procesar/rechazar devoluciones (decide disposición y ajusta stock)',
 };
 
 // Matriz Rol → Permisos (sección 3).
@@ -104,6 +112,8 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.ALERTS_READ,
     PERMISSIONS.PURCHASING_READ,
     PERMISSIONS.PURCHASING_APPROVE,
+    PERMISSIONS.RETURNS_READ,
+    PERMISSIONS.RETURNS_PROCESS,
   ],
   PHARMACIST: [
     PERMISSIONS.INVENTORY_READ,
@@ -111,12 +121,17 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.MOVEMENTS_CREATE,
     PERMISSIONS.MOVEMENTS_READ,
     PERMISSIONS.ALERTS_READ,
+    PERMISSIONS.RETURNS_READ,
+    PERMISSIONS.RETURNS_CREATE,
+    PERMISSIONS.RETURNS_PROCESS,
   ],
   WAREHOUSE: [
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.MOVEMENTS_CREATE,
     PERMISSIONS.MOVEMENTS_READ,
     PERMISSIONS.LOCATIONS_MANAGE,
+    PERMISSIONS.RETURNS_READ,
+    PERMISSIONS.RETURNS_CREATE,
   ],
   PURCHASING: [
     PERMISSIONS.INVENTORY_READ,
@@ -131,6 +146,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.ANALYTICS_READ,
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.MOVEMENTS_READ,
+    PERMISSIONS.RETURNS_READ,
   ],
 };
 

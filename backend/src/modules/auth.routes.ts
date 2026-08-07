@@ -47,6 +47,9 @@ authRouter.post('/login', async (req, res) => {
   });
   await recordAudit({
     userId: user.id,
+    ipAddress: req.ip ?? null,
+    userAgent: req.headers['user-agent'] ?? null,
+    roleKey: user.role.key,
     actionType: 'LOGIN',
     module: 'auth',
     entity: 'User',

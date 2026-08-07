@@ -7,7 +7,7 @@ import { BUSINESS_CONFIG } from '../config/constants';
 import { computeUsefulStock, orderByFefo } from '../domain/inventory';
 import { computePriority } from '../domain/classification';
 import { ABC_CLASSES, VEN_CLASSES, STORAGE_CONDITIONS } from '../domain/enums';
-import { recordAudit } from '../services/audit';
+import { recordAudit, auditContext } from '../services/audit';
 import type { AbcClass, VenClass } from '../domain/enums';
 
 export const inventoryRouter = Router();
@@ -111,7 +111,7 @@ inventoryRouter.post(
     }
     const item = await prisma.item.create({ data: parsed.data });
     await recordAudit({
-      userId: req.auth!.userId,
+      ...auditContext(req),
       actionType: 'CREATE',
       module: 'inventory',
       entity: 'Item',

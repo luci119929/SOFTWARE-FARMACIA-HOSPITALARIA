@@ -37,3 +37,24 @@ export const PO_STATUSES = [
   'CANCELLED',
 ] as const;
 export type PoStatus = (typeof PO_STATUSES)[number];
+
+// Devoluciones y logística inversa
+export const RETURN_REASONS = [
+  'EXPIRED', // Vencido
+  'DAMAGED', // Dañado
+  'UNUSED', // No utilizado
+  'WRONG_DISPENSE', // Dispensado por error
+  'RECALL', // Retiro del mercado
+  'OTHER',
+] as const;
+export type ReturnReason = (typeof RETURN_REASONS)[number];
+
+export const RETURN_DISPOSITIONS = [
+  'RESTOCK', // Reingresa al stock
+  'DISCARD', // Se descarta
+  'RETURN_TO_SUPPLIER', // Se devuelve/canjea con el proveedor
+] as const;
+export type ReturnDisposition = (typeof RETURN_DISPOSITIONS)[number];
+
+export const RETURN_STATUSES = ['PENDING', 'PROCESSED', 'REJECTED'] as const;
+export type ReturnStatus = (typeof RETURN_STATUSES)[number];

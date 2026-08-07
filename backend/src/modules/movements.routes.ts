@@ -4,7 +4,7 @@ import { prisma } from '../db/prisma';
 import { authenticate, requirePermission } from '../auth/middleware';
 import { PERMISSIONS } from '../auth/rbac';
 import { MOVEMENT_TYPES } from '../domain/enums';
-import { recordAudit } from '../services/audit';
+import { recordAudit, auditContext } from '../services/audit';
 
 export const movementsRouter = Router();
 
@@ -82,7 +82,7 @@ movementsRouter.post(
       });
 
       await recordAudit({
-        userId: req.auth!.userId,
+        ...auditContext(req),
         actionType: 'CREATE',
         module: 'movements',
         entity: 'Movement',
