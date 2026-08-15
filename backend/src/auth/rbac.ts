@@ -60,6 +60,12 @@ export const PERMISSIONS = {
   RETURNS_READ: 'returns:read',
   RETURNS_CREATE: 'returns:create',
   RETURNS_PROCESS: 'returns:process',
+  // Historia clínica (orientada a farmacia)
+  PATIENTS_READ: 'patients:read',
+  PATIENTS_MANAGE: 'patients:manage',
+  CLINICAL_HISTORY_READ: 'clinical_history:read',
+  CLINICAL_HISTORY_CREATE: 'clinical_history:create',
+  CLINICAL_HISTORY_UPDATE: 'clinical_history:update',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -90,6 +96,12 @@ export const PERMISSION_DESCRIPTIONS: Record<PermissionKey, string> = {
   'returns:create': 'Registrar una devolución',
   'returns:process':
     'Procesar/rechazar devoluciones (decide disposición y ajusta stock)',
+  'patients:read': 'Consultar el registro de pacientes',
+  'patients:manage': 'Alta/edición de pacientes',
+  'clinical_history:read': 'Consultar la historia clínica (farmacia) de un paciente',
+  'clinical_history:create': 'Registrar una entrada de historia clínica',
+  'clinical_history:update':
+    'Editar una entrada de historia clínica (versiona el estado anterior)',
 };
 
 // Matriz Rol → Permisos (sección 3).
@@ -117,6 +129,8 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.SUPPLIERS_READ,
     PERMISSIONS.RETURNS_READ,
     PERMISSIONS.RETURNS_PROCESS,
+    PERMISSIONS.PATIENTS_READ,
+    PERMISSIONS.CLINICAL_HISTORY_READ,
   ],
   PHARMACIST: [
     PERMISSIONS.INVENTORY_READ,
@@ -127,6 +141,11 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.RETURNS_READ,
     PERMISSIONS.RETURNS_CREATE,
     PERMISSIONS.RETURNS_PROCESS,
+    PERMISSIONS.PATIENTS_READ,
+    PERMISSIONS.PATIENTS_MANAGE,
+    PERMISSIONS.CLINICAL_HISTORY_READ,
+    PERMISSIONS.CLINICAL_HISTORY_CREATE,
+    PERMISSIONS.CLINICAL_HISTORY_UPDATE,
   ],
   WAREHOUSE: [
     PERMISSIONS.INVENTORY_READ,
@@ -155,6 +174,8 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.MOVEMENTS_READ,
     PERMISSIONS.RETURNS_READ,
+    PERMISSIONS.PATIENTS_READ,
+    PERMISSIONS.CLINICAL_HISTORY_READ,
   ],
 };
 

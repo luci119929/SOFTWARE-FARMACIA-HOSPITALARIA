@@ -59,3 +59,17 @@ export type ReturnDisposition = (typeof RETURN_DISPOSITIONS)[number];
 
 export const RETURN_STATUSES = ['PENDING', 'PROCESSED', 'REJECTED'] as const;
 export type ReturnStatus = (typeof RETURN_STATUSES)[number];
+
+// Historia clínica (orientada a farmacia: prescripciones y notas asociadas a
+// la dispensación, no un EHR generalista — eso sigue siendo responsabilidad
+// del HIS del hospital).
+export const PATIENT_SEX = ['M', 'F', 'X'] as const;
+export type PatientSex = (typeof PATIENT_SEX)[number];
+
+export const CLINICAL_ENTRY_TYPES = [
+  'DIAGNOSIS', // Diagnóstico
+  'PRESCRIPTION', // Prescripción / indicación médica
+  'NOTE', // Nota clínica general
+  'ALLERGY_UPDATE', // Actualización de alergias
+] as const;
+export type ClinicalEntryType = (typeof CLINICAL_ENTRY_TYPES)[number];

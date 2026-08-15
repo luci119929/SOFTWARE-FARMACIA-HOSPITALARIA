@@ -11,6 +11,8 @@ import { SuppliersPage } from './pages/SuppliersPage';
 import { ReturnsPage } from './pages/ReturnsPage';
 import { AuditPage } from './pages/AuditPage';
 import { UsersPage } from './pages/UsersPage';
+import { ClinicalHistoryPage } from './pages/ClinicalHistoryPage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
 import { P } from './rbac/permissions';
 import type { ReactElement } from 'react';
 
@@ -100,6 +102,14 @@ export default function App() {
           }
         />
         <Route
+          path="/historia-clinica"
+          element={
+            <Guard anyOf={[P.PATIENTS_READ, P.CLINICAL_HISTORY_READ]}>
+              <ClinicalHistoryPage />
+            </Guard>
+          }
+        />
+        <Route
           path="/auditoria"
           element={
             <Guard anyOf={[P.AUDIT_READ]}>
@@ -112,6 +122,14 @@ export default function App() {
           element={
             <Guard anyOf={[P.USERS_READ]}>
               <UsersPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/integraciones"
+          element={
+            <Guard anyOf={[P.INTEGRATIONS_MANAGE]}>
+              <IntegrationsPage />
             </Guard>
           }
         />

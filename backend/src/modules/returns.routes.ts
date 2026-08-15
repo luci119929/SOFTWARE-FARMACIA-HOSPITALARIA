@@ -5,6 +5,7 @@ import { authenticate, requirePermission } from '../auth/middleware';
 import { PERMISSIONS } from '../auth/rbac';
 import { RETURN_DISPOSITIONS, RETURN_REASONS } from '../domain/enums';
 import { recordAudit, auditContext } from '../services/audit';
+import { broadcast } from '../ws/server';
 
 export const returnsRouter = Router();
 
@@ -193,6 +194,11 @@ returnsRouter.post(
         previousValue: { status: existing.status },
         newValue: { status: result.status, disposition: result.disposition },
       });
+      broadcast('returns.processed', PERMISSIONS.RETURNS_READ, {
+        returnId: result.id,
+        code: result.code,
+        disposition: result.disposition,
+      });
 
       return res.json({ return: result });
     } catch (err) {
@@ -235,6 +241,10 @@ returnsRouter.post(
       entityId: existing.id,
       previousValue: { status: existing.status },
       newValue: { status: updated.status },
+    });
+    broadcast('returns.rejected', PERMISSIONS.RETURNS_READ, {
+      returnId: updated.id,
+      code: updated.code,
     });
 
     return res.json({ return: updated });

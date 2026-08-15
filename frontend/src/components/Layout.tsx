@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { visibleModules } from '../rbac/navigation';
 import { IconLogout } from './icons';
+import { NotificationBell } from './NotificationBell';
 import { Wordmark } from './Wordmark';
 import '../styles/layout.css';
 
@@ -80,6 +81,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 <div className="topbar-role">{user.fullName}</div>
               </div>
             </div>
+            <NotificationBell enabled={!!user} />
             <button className="icon-btn" onClick={logout} aria-label="Cerrar sesión" title="Cerrar sesión">
               <IconLogout size={18} />
             </button>

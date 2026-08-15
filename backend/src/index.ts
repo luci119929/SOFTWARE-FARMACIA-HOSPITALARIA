@@ -1,9 +1,12 @@
 import { createApp } from './app';
 import { env } from './config/env';
+import { attachWebSocketServer } from './ws/server';
 
 const app = createApp();
 
-app.listen(env.port, () => {
+const server = app.listen(env.port, () => {
   // eslint-disable-next-line no-console
   console.log(`MedLine API escuchando en http://localhost:${env.port}`);
 });
+
+attachWebSocketServer(server);

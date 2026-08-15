@@ -4,7 +4,16 @@ info:
   description: >
     Middleware de gestión de farmacia hospitalaria: RBAC, inventario con FEFO
     y Stock Útil, libro de movimientos, Motor de Compra Inteligente, gestión
-    de proveedores, devoluciones/logística inversa y auditoría inmutable.
+    de proveedores, devoluciones/logística inversa, historia clínica
+    (farmacia) con versionado, y auditoría inmutable.
+
+
+    Además de los endpoints REST documentados aquí, el servidor expone un
+    canal **WebSocket** en `ws://<host>/ws?token=<JWT>` para notificaciones en
+    tiempo real (nuevos movimientos, cambios de estado de órdenes de compra,
+    devoluciones procesadas/rechazadas). OpenAPI no modela WebSockets; se deja
+    esta nota como referencia. Cada evento llega sólo a los sockets cuyo
+    usuario tiene el permiso del recurso correspondiente.
   version: "1.0.0"
 servers:
   - url: /api
@@ -30,6 +39,14 @@ tags:
     description: Gestión de usuarios (RBAC)
   - name: Meta
     description: Catálogos auxiliares (roles, proveedores)
+  - name: ClinicalHistory
+    description: >
+      Pacientes e historia clínica orientada a farmacia (prescripciones, notas
+      de dispensación), con versionado de cambios
+  - name: Integrations
+    description: >
+      Integraciones externas. Hoy sólo existe un adaptador HIS simulado
+      (MockHisAdapter): no hay un HIS real configurado todavía.
 
 components:
   securitySchemes:
@@ -251,6 +268,41 @@ components:
         role: { type: object, properties: { key: { type: string }, name: { type: string } } }
         isActive: { type: boolean }
         lastLoginAt: { type: string, format: date-time, nullable: true }
+    Patient:
+      type: object
+      properties:
+        id: { type: string }
+        mrn: { type: string, description: 'Número de historia clínica', example: 'HC-000123' }
+        fullName: { type: string }
+        dateOfBirth: { type: string, format: date-time }
+        sex: { type: string, enum: [M, F, X] }
+        allergies: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+    ClinicalHistoryEntry:
+      type: object
+      properties:
+        id: { type: string }
+        patientId: { type: string }
+        entryType: { type: string, enum: [DIAGNOSIS, PRESCRIPTION, NOTE, ALLERGY_UPDATE] }
+        title: { type: string }
+        description: { type: string }
+        relatedItem: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string } } }
+        version: { type: integer, description: 'Se incrementa en cada edición' }
+        createdBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
+        updatedBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ClinicalHistoryVersion:
+      type: object
+      description: Foto completa del estado ANTERIOR a un cambio (no un diff).
+      properties:
+        id: { type: string }
+        version: { type: integer }
+        entryType: { type: string }
+        title: { type: string }
+        description: { type: string }
+        changedBy: { type: object, properties: { id: { type: string }, fullName: { type: string } } }
+        changedAt: { type: string, format: date-time }
   parameters:
     ItemIdFilter:
       name: itemId
@@ -756,3 +808,159 @@ paths:
       summary: 'Atajo legado de sólo lectura para proveedores (preferir GET /suppliers)'
       responses:
         '200': { description: Proveedores }
+
+  /patients:
+    get:
+      tags: [ClinicalHistory]
+      summary: Listar/buscar pacientes por nombre o Nº de historia clínica (requiere patients:read)
+      parameters:
+        - $ref: '#/components/parameters/SearchQuery'
+      responses:
+        '200':
+          description: Pacientes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  patients: { type: array, items: { $ref: '#/components/schemas/Patient' } }
+    post:
+      tags: [ClinicalHistory]
+      summary: Crear paciente (requiere patients:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mrn, fullName, dateOfBirth, sex]
+              properties:
+                mrn: { type: string }
+                fullName: { type: string }
+                dateOfBirth: { type: string, format: date }
+                sex: { type: string, enum: [M, F, X] }
+                allergies: { type: string }
+                notes: { type: string }
+      responses:
+        '201': { description: Paciente creado }
+        '409': { description: 'Ya existe un paciente con ese Nº de historia clínica' }
+  /patients/{id}:
+    get:
+      tags: [ClinicalHistory]
+      summary: Detalle de un paciente con su historia clínica completa (requiere patients:read)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: Paciente + entradas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  patient:
+                    allOf:
+                      - $ref: '#/components/schemas/Patient'
+                      - type: object
+                        properties:
+                          entries: { type: array, items: { $ref: '#/components/schemas/ClinicalHistoryEntry' } }
+        '404': { description: No encontrado }
+    patch:
+      tags: [ClinicalHistory]
+      summary: Actualizar datos del paciente (requiere patients:manage)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Paciente actualizado }
+  /patients/{id}/entries:
+    post:
+      tags: [ClinicalHistory]
+      summary: Registrar una entrada de historia clínica (requiere clinical_history:create)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entryType, title, description]
+              properties:
+                entryType: { type: string, enum: [DIAGNOSIS, PRESCRIPTION, NOTE, ALLERGY_UPDATE] }
+                title: { type: string }
+                description: { type: string }
+                relatedItemId: { type: string, nullable: true, description: 'Medicamento prescripto, si aplica' }
+      responses:
+        '201': { description: Entrada creada }
+        '404': { description: Paciente no encontrado }
+  /patients/entries/{entryId}:
+    patch:
+      tags: [ClinicalHistory]
+      summary: >
+        Editar una entrada (requiere clinical_history:update). Antes de
+        sobreescribir, archiva el estado anterior completo en
+        ClinicalHistoryVersion e incrementa `version`.
+      parameters: [{ name: entryId, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entryType: { type: string, enum: [DIAGNOSIS, PRESCRIPTION, NOTE, ALLERGY_UPDATE] }
+                title: { type: string }
+                description: { type: string }
+                relatedItemId: { type: string, nullable: true }
+      responses:
+        '200': { description: Entrada actualizada }
+        '404': { description: No encontrada }
+  /patients/entries/{entryId}/versions:
+    get:
+      tags: [ClinicalHistory]
+      summary: Historial de versiones previas de una entrada (requiere clinical_history:read)
+      parameters: [{ name: entryId, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: Versiones, más reciente primero
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentVersion: { type: integer }
+                  versions: { type: array, items: { $ref: '#/components/schemas/ClinicalHistoryVersion' } }
+
+  /integrations/his/status:
+    get:
+      tags: [Integrations]
+      summary: Salud/conectividad del adaptador HIS activo (requiere integrations:manage)
+      responses:
+        '200':
+          description: Estado del adaptador (hoy siempre MockHisAdapter)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adapter: { type: string }
+                  connected: { type: boolean }
+                  latencyMs: { type: integer }
+                  details: { type: string }
+  /integrations/his/sync:
+    post:
+      tags: [Integrations]
+      summary: >
+        Dispara una sincronización manual entrante (pacientes + prescripciones)
+        contra el adaptador HIS activo (requiere integrations:manage).
+      responses:
+        '200':
+          description: Resumen de la sincronización
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adapter: { type: string }
+                  patients: { type: object, properties: { synced: { type: integer }, details: { type: string } } }
+                  prescriptions: { type: object, properties: { synced: { type: integer }, details: { type: string } } }

@@ -15,6 +15,12 @@ export default defineConfig({
         target: process.env.VITE_API_TARGET ?? 'http://localhost:4000',
         changeOrigin: true,
       },
+      // Notificaciones en tiempo real (WebSocket).
+      '/ws': {
+        target: process.env.VITE_API_TARGET ?? 'http://localhost:4000',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 });

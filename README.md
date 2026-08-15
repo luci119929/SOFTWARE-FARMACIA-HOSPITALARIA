@@ -22,20 +22,22 @@ medline/
 ├── backend/     API REST (Node + Express + TypeScript + Prisma)
 │   ├── prisma/  Esquema de datos y seed de demostración
 │   └── src/
-│       ├── auth/      RBAC, JWT, hashing, middleware de permisos
-│       ├── domain/    Motores: clasificación, inventario/FEFO, compra, alertas
-│       ├── modules/   Rutas HTTP por módulo
-│       ├── services/  Auditoría inmutable, analítica de consumo
-│       └── db/        Cliente Prisma
+│       ├── auth/          RBAC, JWT, hashing, middleware de permisos
+│       ├── domain/        Motores: clasificación, inventario/FEFO, compra, alertas
+│       ├── modules/       Rutas HTTP por módulo
+│       ├── services/      Auditoría inmutable, analítica de consumo
+│       ├── ws/            Servidor WebSocket (notificaciones en tiempo real)
+│       ├── integrations/  Adaptador HIS (hoy sólo MockHisAdapter)
+│       └── db/            Cliente Prisma
 ├── frontend/    SPA (React + Vite + TypeScript)
 │   └── src/
 │       ├── auth/        Contexto de sesión
 │       ├── theme/       Modo claro/oscuro persistente
 │       ├── rbac/        Catálogo de navegación y permisos (UI)
 │       ├── components/  Layout dinámico, iconografía propia, UI
-│       ├── hooks/       Hooks reutilizables (debounce, etc.)
+│       ├── hooks/       Hooks reutilizables (debounce, notificaciones en tiempo real)
 │       ├── utils/       Export a PDF (jsPDF)
-│       └── pages/       Login, Panel, Inventario, Motor de Compra, etc.
+│       └── pages/       Login, Panel, Inventario, Motor de Compra, Historia Clínica, etc.
 └── e2e/         Tests end-to-end (Playwright) sobre los flujos críticos
 ```
 
@@ -47,6 +49,7 @@ medline/
 | Base datos| SQLite (desarrollo) · PostgreSQL (producción)                     |
 | Auth      | JWT + bcrypt, permisos por rol (RBAC)                              |
 | Frontend  | React 18, Vite, React Router, CSS propio (sin UI kits), Recharts, jsPDF |
+| Tiempo real | WebSocket (`ws`) sobre el mismo JWT que la API REST              |
 | Docs API  | OpenAPI 3 servido con Swagger UI (`/api/docs`)                    |
 | Tests     | Vitest (unitarios de dominio) · Playwright (E2E de flujos críticos)|
 
@@ -106,10 +109,14 @@ npm install
 npx playwright test            # resetea+siembra la DB y levanta ambos servidores
 ```
 
-La suite cubre RBAC de navegación (incluida la regresión de Depósito viendo
-Motor de Compra), el ciclo completo de una orden de compra
+La suite (8 specs) cubre RBAC de navegación (incluida la regresión de Depósito
+viendo Motor de Compra), el ciclo completo de una orden de compra
 (`DRAFT → SUBMITTED → APPROVED → RECEIVED` a través de los tres roles que lo
-autorizan) y el flujo de devoluciones (registrar → procesar). Requiere
+autorizan), el flujo de devoluciones (registrar → procesar), historia clínica
+(crear paciente → registrar entrada → editarla → confirmar que la versión
+anterior quedó archivada) y notificaciones en tiempo real de punta a punta
+(dos usuarios en dos contextos de navegador separados: uno registra un
+movimiento, el otro lo recibe en vivo por WebSocket sin recargar). Requiere
 `backend/.env` ya configurado (ver arriba) y usa el Chromium preinstalado del
 entorno remoto (`PLAYWRIGHT_CHROMIUM_PATH` para sobreescribirlo en otro
 entorno).
@@ -129,7 +136,14 @@ entorno).
 - ✅ Búsqueda de texto libre en Movimientos y Auditoría.
 - ✅ Export a PDF de auditoría y de órdenes de compra (verificado con PDFs
   reales generados en un flujo E2E).
-- ✅ 44 tests unitarios de dominio + 6 tests E2E de flujos críticos, todos en verde.
+- ✅ Historia clínica: crear paciente, registrar entrada, editarla — la
+  versión anterior queda archivada íntegra (no sólo un diff) y es consultable.
+- ✅ Notificaciones en tiempo real: verificado con dos usuarios en dos
+  navegadores distintos — el evento llega al segundo sin recargar la página,
+  filtrado por el permiso del recurso.
+- ✅ Adaptador HIS simulado: `/integrations/his/sync` sincroniza un paciente y
+  una prescripción demo de punta a punta (visibles luego en Historia Clínica).
+- ✅ 44 tests unitarios de dominio + 8 tests E2E de flujos críticos, todos en verde.
 
 ## Estado y próximos pasos
 
@@ -163,12 +177,34 @@ entorno).
     ciclo completo de una orden de compra y el flujo de devoluciones.
   - **Documentación OpenAPI/Swagger** de toda la API en `/api/docs`.
 
-Próximos pasos identificados y **fuera de alcance de esta fase** por requerir
-definición de producto o de integración externa antes de implementarse:
-**WebSockets** para notificaciones en tiempo real, un módulo nuevo de
-**Historia Clínica** (versionado de cambios incluido) y **sincronización
-bidireccional con un HIS** (se prevé una capa de adaptador/mock primero, hasta
-tener un HIS real y su protocolo). También quedan pendientes: integración
-interhospitalaria (sección 10), integración de cadena de frío por hardware,
-EOQ con costos (modelo de Wilson) y capas de IA para pronóstico de demanda. El
-diseño modular permite incorporar todo esto sin reescribir el núcleo.
+- **Fase 5 (tiempo real, historia clínica, integración HIS)** agregó:
+  - **WebSocket** (`backend/src/ws/server.ts`, montado en `/ws`) para
+    notificaciones en tiempo real, autenticado con el mismo JWT que la API
+    REST. Cada evento se filtra por el permiso del recurso que representa
+    antes de enviarse — un socket sólo recibe lo que su usuario también
+    podría leer por REST. Eventos emitidos hoy: nuevo movimiento, cambios de
+    estado de una orden de compra (enviada/aprobada/rechazada/recibida),
+    devolución procesada/rechazada, y entrada de historia clínica
+    creada/editada. En el frontend, `useNotifications` + `NotificationBell`
+    (campanita en la barra superior) reconectan automáticamente si se corta
+    la conexión.
+  - **Historia Clínica** orientada a farmacia (`Patient` +
+    `ClinicalHistoryEntry`, nueva pantalla `/historia-clinica`): registro de
+    pacientes y entradas (diagnóstico, prescripción, nota, actualización de
+    alergias). No es un EHR generalista — eso lo sigue llevando el HIS del
+    hospital. **Versionado real**: cada edición archiva primero el estado
+    completo anterior en `ClinicalHistoryVersion` (no un diff) y lo deja
+    consultable desde la propia entrada.
+  - **Integración HIS**: interfaz `HisAdapter`
+    (`backend/src/integrations/his/HisAdapter.ts`) con un
+    `MockHisAdapter` como única implementación — no hay un HIS real
+    configurado todavía. Expone `checkStatus`, `syncPatients`,
+    `syncPrescriptions` y `pushDispenseEvent`; se opera desde
+    `/integraciones` (sólo Administrador) o vía
+    `POST /api/integrations/his/sync`. Reemplazar por un adaptador real
+    (HL7/FHIR/REST) no requiere tocar quien lo consume.
+
+Quedan pendientes, sin bloquear lo anterior: integración interhospitalaria
+(sección 10), integración de cadena de frío por hardware, EOQ con costos
+(modelo de Wilson) y capas de IA para pronóstico de demanda. El diseño modular
+permite incorporar todo esto sin reescribir el núcleo.

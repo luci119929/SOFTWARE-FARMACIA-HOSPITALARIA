@@ -137,3 +137,32 @@ export function IconReturn({ size }: IconProps) {
     </svg>
   );
 }
+
+export function IconClipboard({ size }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+      <path d="M9 11h6M9 15h6M9 19h3" />
+    </svg>
+  );
+}
+
+export function IconPlug({ size }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M9 3v6M15 3v6" />
+      <path d="M6 9h12v3a6 6 0 0 1-12 0V9z" />
+      <path d="M12 18v3" />
+    </svg>
+  );
+}
+
+export function IconBell({ size }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}

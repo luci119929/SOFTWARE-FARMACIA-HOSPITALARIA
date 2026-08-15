@@ -8,6 +8,7 @@ import { computeUsefulStock } from '../domain/inventory';
 import { buildRecommendation, canTransitionPoStatus } from '../domain/purchasing';
 import { getDailyConsumption } from '../services/analytics';
 import { recordAudit, auditContext, getPurchaseOrderHistory } from '../services/audit';
+import { broadcast } from '../ws/server';
 import type { PoStatus, VenClass } from '../domain/enums';
 
 export const purchasingRouter = Router();
@@ -246,6 +247,11 @@ purchasingRouter.post(
       previousValue: { status: order.status },
       newValue: { status: 'SUBMITTED' },
     });
+    broadcast('purchasing.order_submitted', PERMISSIONS.PURCHASING_READ, {
+      orderId: updated.id,
+      code: updated.code,
+      status: updated.status,
+    });
     return res.json({ order: updated });
   }
 );
@@ -271,6 +277,11 @@ purchasingRouter.post(
       entityId: req.params.id,
       previousValue: { status: order.status },
       newValue: { status: 'APPROVED' },
+    });
+    broadcast('purchasing.order_approved', PERMISSIONS.PURCHASING_READ, {
+      orderId: updated.id,
+      code: updated.code,
+      status: updated.status,
     });
     return res.json({ order: updated });
   }
@@ -308,6 +319,12 @@ purchasingRouter.post(
       entityId: req.params.id,
       previousValue: { status: order.status },
       newValue: { status: 'REJECTED', reason: parsed.data.reason },
+    });
+    broadcast('purchasing.order_rejected', PERMISSIONS.PURCHASING_READ, {
+      orderId: updated.id,
+      code: updated.code,
+      status: updated.status,
+      reason: parsed.data.reason,
     });
     return res.json({ order: updated });
   }
@@ -418,6 +435,11 @@ purchasingRouter.post(
         entityId: order.id,
         previousValue: { status: order.status },
         newValue: { status: updatedOrder.status, lines: parsed.data.lines },
+      });
+      broadcast('purchasing.order_received', PERMISSIONS.PURCHASING_READ, {
+        orderId: updatedOrder.id,
+        code: updatedOrder.code,
+        status: updatedOrder.status,
       });
 
       return res.json({ order: updatedOrder });

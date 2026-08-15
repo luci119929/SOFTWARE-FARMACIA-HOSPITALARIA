@@ -300,6 +300,45 @@ async function main() {
     console.log(`  ${movementData.length} movimientos de consumo sembrados.`);
   }
 
+  // 7. Historia clínica (demo) -------------------------------------------------
+  const pharmacistId = userIdByRole.get('PHARMACIST')!;
+  const patient = await prisma.patient.upsert({
+    where: { mrn: 'HC-000123' },
+    create: {
+      mrn: 'HC-000123',
+      fullName: 'Rosa Martínez',
+      dateOfBirth: new Date('1958-03-12'),
+      sex: 'F',
+      allergies: 'Penicilina',
+      notes: 'Paciente ambulatoria, control de diabetes tipo 2.',
+    },
+    update: {},
+  });
+  const clinicalEntryExists = await prisma.clinicalHistoryEntry.findFirst({
+    where: { patientId: patient.id },
+  });
+  if (!clinicalEntryExists) {
+    await prisma.clinicalHistoryEntry.create({
+      data: {
+        patientId: patient.id,
+        entryType: 'DIAGNOSIS',
+        title: 'Diabetes mellitus tipo 2',
+        description: 'Diagnóstico confirmado, inicia plan de insulinoterapia.',
+        createdById: pharmacistId,
+      },
+    });
+    await prisma.clinicalHistoryEntry.create({
+      data: {
+        patientId: patient.id,
+        entryType: 'PRESCRIPTION',
+        title: 'Insulina NPH 100UI/mL',
+        description: '10 UI subcutáneas cada 12 horas.',
+        relatedItemId: 'seed-item-insulina',
+        createdById: pharmacistId,
+      },
+    });
+  }
+
   console.log('Seed completado.');
   console.log(`Usuarios demo (contraseña: ${DEMO_PASSWORD}):`);
   demoUsers.forEach((u) => console.log(`  - ${u.email} (${ROLE_LABELS[u.role]})`));

@@ -197,7 +197,11 @@ export function SuppliersPage() {
         </div>
 
         {canManage && (
-          <div className="card card-pad" style={{ alignSelf: 'start' }}>
+          <div style={{ alignSelf: 'start' }}>
+            {msg && !editingId && (
+              <div className="card card-pad muted" style={{ marginBottom: 12 }}>{msg}</div>
+            )}
+            <div className="card card-pad">
             {editingId ? (
               <>
                 <h2 style={{ fontSize: '1.05rem' }}>{editingId === 'new' ? 'Nuevo proveedor' : 'Editar proveedor'}</h2>
@@ -257,6 +261,7 @@ export function SuppliersPage() {
             ) : (
               <button className="btn btn-primary" onClick={startCreate}>Nuevo proveedor</button>
             )}
+            </div>
           </div>
         )}
       </div>

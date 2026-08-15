@@ -15,6 +15,8 @@ import { usersRouter } from './modules/users.routes';
 import { metaRouter } from './modules/meta.routes';
 import { returnsRouter } from './modules/returns.routes';
 import { suppliersRouter } from './modules/suppliers.routes';
+import { patientsRouter } from './modules/clinicalHistory.routes';
+import { integrationsRouter } from './modules/integrations.routes';
 
 export function createApp() {
   const app = express();
@@ -43,6 +45,8 @@ export function createApp() {
   app.use('/api/meta', metaRouter);
   app.use('/api/returns', returnsRouter);
   app.use('/api/suppliers', suppliersRouter);
+  app.use('/api/patients', patientsRouter);
+  app.use('/api/integrations', integrationsRouter);
 
   // Manejador de errores genérico.
   app.use(

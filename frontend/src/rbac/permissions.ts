@@ -25,4 +25,9 @@ export const P = {
   RETURNS_READ: 'returns:read',
   RETURNS_CREATE: 'returns:create',
   RETURNS_PROCESS: 'returns:process',
+  PATIENTS_READ: 'patients:read',
+  PATIENTS_MANAGE: 'patients:manage',
+  CLINICAL_HISTORY_READ: 'clinical_history:read',
+  CLINICAL_HISTORY_CREATE: 'clinical_history:create',
+  CLINICAL_HISTORY_UPDATE: 'clinical_history:update',
 } as const;

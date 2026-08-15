@@ -46,23 +46,26 @@ model RolePermission {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique // Identidad = correo institucional
-  passwordHash String
-  fullName     String
-  roleId       String
-  role         Role       @relation(fields: [roleId], references: [id])
-  isActive     Boolean    @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  movements    Movement[]
-  createdPOs   PurchaseOrder[] @relation("POCreatedBy")
-  approvedPOs  PurchaseOrder[] @relation("POApprovedBy")
-  rejectedPOs  PurchaseOrder[] @relation("PORejectedBy")
-  auditEntries AuditLog[]
-  returnsRequested StockReturn[] @relation("ReturnRequestedBy")
-  returnsProcessed StockReturn[] @relation("ReturnProcessedBy")
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique // Identidad = correo institucional
+  passwordHash            String
+  fullName                String
+  roleId                  String
+  role                    Role                     @relation(fields: [roleId], references: [id])
+  isActive                Boolean                  @default(true)
+  lastLoginAt             DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  movements               Movement[]
+  createdPOs              PurchaseOrder[]          @relation("POCreatedBy")
+  approvedPOs             PurchaseOrder[]          @relation("POApprovedBy")
+  rejectedPOs             PurchaseOrder[]          @relation("PORejectedBy")
+  auditEntries            AuditLog[]
+  returnsRequested        StockReturn[]            @relation("ReturnRequestedBy")
+  returnsProcessed        StockReturn[]            @relation("ReturnProcessedBy")
+  clinicalEntriesCreated  ClinicalHistoryEntry[]   @relation("ClinicalEntryCreatedBy")
+  clinicalEntriesUpdated  ClinicalHistoryEntry[]   @relation("ClinicalEntryUpdatedBy")
+  clinicalVersionsChanged ClinicalHistoryVersion[] @relation("ClinicalVersionChangedBy")
 }
 
 // ---------------------------------------------------------------------------
@@ -70,64 +73,65 @@ model User {
 // ---------------------------------------------------------------------------
 
 model Supplier {
-  id           String        @id @default(cuid())
-  name         String
-  contactName  String? // persona de contacto
-  contactEmail String?
-  contactPhone String?
-  address      String?
-  taxId        String? // identificación fiscal (CUIT/RUC/NIT)
-  paymentTerms String? // condiciones comerciales, p.ej. "30 días fecha factura"
-  notes        String?
-  leadTimeDays Int           @default(7) // TE — Tiempo de Entrega por defecto
-  isActive     Boolean       @default(true)
-  items        Item[]
+  id             String          @id @default(cuid())
+  name           String
+  contactName    String? // persona de contacto
+  contactEmail   String?
+  contactPhone   String?
+  address        String?
+  taxId          String? // identificación fiscal (CUIT/RUC/NIT)
+  paymentTerms   String? // condiciones comerciales, p.ej. "30 días fecha factura"
+  notes          String?
+  leadTimeDays   Int             @default(7) // TE — Tiempo de Entrega por defecto
+  isActive       Boolean         @default(true)
+  items          Item[]
   purchaseOrders PurchaseOrder[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model Item {
-  id                  String   @id @default(cuid())
+  id                     String                 @id @default(cuid())
   // Metadatos del medicamento (sección 4)
-  name                String
-  activeIngredient    String
-  manufacturer        String
-  presentation        String
-  concentration       String
-  therapeuticCategory String
+  name                   String
+  activeIngredient       String
+  manufacturer           String
+  presentation           String
+  concentration          String
+  therapeuticCategory    String
   // Clasificación farmacológica (sección 6)
-  abcClassification   String // A | B | C
-  venClassification   String // V | E | N
+  abcClassification      String // A | B | C
+  venClassification      String // V | E | N
   // Almacenamiento y cadena de frío
-  storageCondition    String // AMBIENT | REFRIGERATED
+  storageCondition       String // AMBIENT | REFRIGERATED
   // Parámetros logísticos para el Motor de Compra (sección 9.1)
-  minimumThreshold    Int      @default(0) // umbral de stock crítico
-  maxStorageCapacity  Int      @default(0) // capacidad máxima (unidades) en destino
-  moq                 Int      @default(1) // Lote Mínimo de Compra
-  leadTimeDaysOverride Int?    // TE específico del ítem (sobrescribe el del proveedor)
-  supplierId          String?
-  supplier            Supplier? @relation(fields: [supplierId], references: [id])
-  batches             Batch[]
-  movements           Movement[]
-  alerts              Alert[]
-  poLines             PurchaseOrderLine[]
-  returns             StockReturn[]
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  minimumThreshold       Int                    @default(0) // umbral de stock crítico
+  maxStorageCapacity     Int                    @default(0) // capacidad máxima (unidades) en destino
+  moq                    Int                    @default(1) // Lote Mínimo de Compra
+  leadTimeDaysOverride   Int? // TE específico del ítem (sobrescribe el del proveedor)
+  supplierId             String?
+  supplier               Supplier?              @relation(fields: [supplierId], references: [id])
+  batches                Batch[]
+  movements              Movement[]
+  alerts                 Alert[]
+  poLines                PurchaseOrderLine[]
+  returns                StockReturn[]
+  clinicalHistoryEntries ClinicalHistoryEntry[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
 }
 
 // Lote físico — habilita FEFO y el cálculo de Stock Útil vs. En Riesgo
 model Batch {
-  id               String   @id @default(cuid())
+  id               String        @id @default(cuid())
   itemId           String
-  item             Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item             Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
   batchNumber      String
   expirationDate   DateTime // ISO-8601
-  availableQty     Int      @default(0)
+  availableQty     Int           @default(0)
   physicalLocation String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   returns          StockReturn[]
 
   @@unique([itemId, batchNumber])
@@ -157,14 +161,14 @@ model Movement {
 // ---------------------------------------------------------------------------
 
 model Alert {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   itemId     String
-  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item       Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
   type       String // CRITICAL_STOCK | EXPIRY_RISK | COLD_CHAIN_BREACH | ANOMALOUS_CONSUMPTION
   severity   String // INFO | WARNING | CRITICAL
   message    String
-  status     String   @default("OPEN") // OPEN | ACKNOWLEDGED | RESOLVED
-  createdAt  DateTime @default(now())
+  status     String    @default("OPEN") // OPEN | ACKNOWLEDGED | RESOLVED
+  createdAt  DateTime  @default(now())
   resolvedAt DateTime?
 }
 
@@ -215,14 +219,14 @@ model PurchaseOrderLine {
 // ---------------------------------------------------------------------------
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  timestamp  DateTime @default(now())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  actionType String // CREATE | UPDATE | DELETE | LOGIN | APPROVE | RECOMMEND ...
-  module     String
-  entity     String?
-  entityId   String?
+  id            String   @id @default(cuid())
+  timestamp     DateTime @default(now())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  actionType    String // CREATE | UPDATE | DELETE | LOGIN | APPROVE | RECOMMEND ...
+  module        String
+  entity        String?
+  entityId      String?
   previousValue String? // JSON serializado (Valor Anterior)
   newValue      String? // JSON serializado (Nuevo Valor)
   ipAddress     String? // IP del cliente al momento de la acción
@@ -255,4 +259,66 @@ model StockReturn {
   note                String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Historia clínica orientada a farmacia — pacientes, prescripciones y notas
+// asociadas a la dispensación. No reemplaza al HIS del hospital (diagnósticos
+// clínicos completos, resultados de laboratorio, etc.), sólo lleva el
+// registro que la farmacia necesita para justificar y trazar lo que dispensa.
+// ---------------------------------------------------------------------------
+
+model Patient {
+  id          String                 @id @default(cuid())
+  mrn         String                 @unique // Número de historia clínica (Medical Record Number)
+  fullName    String
+  dateOfBirth DateTime
+  sex         String // PATIENT_SEX: M | F | X
+  allergies   String? // texto libre — alergias conocidas, chequeo obligatorio antes de prescribir
+  notes       String?
+  entries     ClinicalHistoryEntry[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+}
+
+// Entrada de historia clínica. Refleja siempre el estado ACTUAL; el historial
+// de versiones previas vive en ClinicalHistoryVersion (sección 12-bis).
+model ClinicalHistoryEntry {
+  id            String                   @id @default(cuid())
+  patientId     String
+  patient       Patient                  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  entryType     String // CLINICAL_ENTRY_TYPES: DIAGNOSIS | PRESCRIPTION | NOTE | ALLERGY_UPDATE
+  title         String
+  description   String
+  relatedItemId String? // p.ej. el medicamento prescripto, si entryType=PRESCRIPTION
+  relatedItem   Item?                    @relation(fields: [relatedItemId], references: [id])
+  version       Int                      @default(1) // se incrementa en cada UPDATE
+  createdById   String
+  createdBy     User                     @relation("ClinicalEntryCreatedBy", fields: [createdById], references: [id])
+  updatedById   String?
+  updatedBy     User?                    @relation("ClinicalEntryUpdatedBy", fields: [updatedById], references: [id])
+  versions      ClinicalHistoryVersion[]
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+}
+
+// Versionado de cambios (sección "Historia Clínica"): antes de sobreescribir
+// una entrada, se guarda una foto completa del estado anterior. A diferencia
+// del AuditLog genérico (que guarda un diff previousValue→newValue), esto
+// permite reconstruir y mostrar el contenido íntegro de cualquier versión
+// pasada sin tener que recomponerlo a partir de una cadena de diffs.
+model ClinicalHistoryVersion {
+  id            String               @id @default(cuid())
+  entryId       String
+  entry         ClinicalHistoryEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  version       Int // número de la versión que este registro representa (el estado PREVIO al cambio)
+  entryType     String
+  title         String
+  description   String
+  relatedItemId String?
+  changedById   String // quién hizo el cambio que dio origen a esta versión archivada
+  changedBy     User                 @relation("ClinicalVersionChangedBy", fields: [changedById], references: [id])
+  changedAt     DateTime             @default(now())
+
+  @@unique([entryId, version])
 }

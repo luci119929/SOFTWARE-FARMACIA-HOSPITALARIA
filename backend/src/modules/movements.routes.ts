@@ -5,6 +5,7 @@ import { authenticate, requirePermission } from '../auth/middleware';
 import { PERMISSIONS } from '../auth/rbac';
 import { MOVEMENT_TYPES } from '../domain/enums';
 import { recordAudit, auditContext } from '../services/audit';
+import { broadcast } from '../ws/server';
 
 export const movementsRouter = Router();
 
@@ -71,7 +72,7 @@ movementsRouter.post(
     const data = parsed.data;
 
     try {
-      const movement = await prisma.$transaction(async (tx) => {
+      const { movement, itemName } = await prisma.$transaction(async (tx) => {
         const item = await tx.item.findUnique({ where: { id: data.itemId } });
         if (!item) throw new Error('ITEM_NOT_FOUND');
 
@@ -87,7 +88,7 @@ movementsRouter.post(
           });
         }
 
-        return tx.movement.create({
+        const movement = await tx.movement.create({
           data: {
             userId: req.auth!.userId,
             itemId: data.itemId,
@@ -99,6 +100,7 @@ movementsRouter.post(
             note: data.note,
           },
         });
+        return { movement, itemName: item.name };
       });
 
       await recordAudit({
@@ -108,6 +110,12 @@ movementsRouter.post(
         entity: 'Movement',
         entityId: movement.id,
         newValue: movement,
+      });
+      broadcast('movements.created', PERMISSIONS.MOVEMENTS_READ, {
+        movementId: movement.id,
+        itemName,
+        movementType: movement.movementType,
+        quantityDelta: movement.quantityDelta,
       });
 
       return res.status(201).json({ movement });

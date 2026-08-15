@@ -10,6 +10,8 @@ import {
   IconAudit,
   IconUsers,
   IconReturn,
+  IconClipboard,
+  IconPlug,
 } from '../components/icons';
 
 export interface NavModule {
@@ -78,6 +80,13 @@ export const NAV_MODULES: NavModule[] = [
     anyOf: [P.SUPPLIERS_READ, P.SUPPLIERS_MANAGE],
   },
   {
+    key: 'clinical-history',
+    path: '/historia-clinica',
+    label: 'Historia Clínica',
+    icon: IconClipboard,
+    anyOf: [P.PATIENTS_READ, P.CLINICAL_HISTORY_READ],
+  },
+  {
     key: 'audit',
     path: '/auditoria',
     label: 'Auditoría',
@@ -90,6 +99,13 @@ export const NAV_MODULES: NavModule[] = [
     label: 'Usuarios',
     icon: IconUsers,
     anyOf: [P.USERS_READ],
+  },
+  {
+    key: 'integrations',
+    path: '/integraciones',
+    label: 'Integraciones',
+    icon: IconPlug,
+    anyOf: [P.INTEGRATIONS_MANAGE],
   },
 ];
 

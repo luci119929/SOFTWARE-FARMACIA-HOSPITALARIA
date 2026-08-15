@@ -151,6 +151,45 @@ export interface AuditEntry {
   user: { id: string; fullName: string; email: string } | null;
 }
 
+export type PatientSex = 'M' | 'F' | 'X';
+
+export interface Patient {
+  id: string;
+  mrn: string;
+  fullName: string;
+  dateOfBirth: string;
+  sex: PatientSex;
+  allergies: string | null;
+  notes: string | null;
+  entries?: ClinicalHistoryEntry[];
+}
+
+export type ClinicalEntryType = 'DIAGNOSIS' | 'PRESCRIPTION' | 'NOTE' | 'ALLERGY_UPDATE';
+
+export interface ClinicalHistoryEntry {
+  id: string;
+  patientId: string;
+  entryType: ClinicalEntryType;
+  title: string;
+  description: string;
+  relatedItem: { id: string; name: string } | null;
+  version: number;
+  createdBy: { id: string; fullName: string } | null;
+  updatedBy: { id: string; fullName: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClinicalHistoryVersion {
+  id: string;
+  version: number;
+  entryType: ClinicalEntryType;
+  title: string;
+  description: string;
+  changedBy: { id: string; fullName: string };
+  changedAt: string;
+}
+
 export interface UserRow {
   id: string;
   email: string;
