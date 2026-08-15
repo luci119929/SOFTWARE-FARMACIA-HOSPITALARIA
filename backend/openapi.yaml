@@ -1,0 +1,758 @@
+openapi: 3.0.3
+info:
+  title: MedLine API
+  description: >
+    Middleware de gestión de farmacia hospitalaria: RBAC, inventario con FEFO
+    y Stock Útil, libro de movimientos, Motor de Compra Inteligente, gestión
+    de proveedores, devoluciones/logística inversa y auditoría inmutable.
+  version: "1.0.0"
+servers:
+  - url: /api
+    description: API relativa (mismo origen que el frontend en desarrollo/producción)
+tags:
+  - name: Auth
+    description: Autenticación y sesión
+  - name: Inventory
+    description: Catálogo de medicamentos, lotes, Stock Útil y prioridad ABC+VEN+FEFO
+  - name: Movements
+    description: Libro mayor de movimientos de stock (event-driven)
+  - name: Alerts
+    description: Alertas automatizadas evaluadas en tiempo real
+  - name: Purchasing
+    description: Motor de Compra Inteligente y flujo de aprobación de órdenes
+  - name: Suppliers
+    description: Gestión de proveedores e historial de compras
+  - name: Returns
+    description: Devoluciones y logística inversa
+  - name: Audit
+    description: Registro de auditoría inmutable (append-only)
+  - name: Users
+    description: Gestión de usuarios (RBAC)
+  - name: Meta
+    description: Catálogos auxiliares (roles, proveedores)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token emitido por POST /auth/login. Embebe el set de permisos del
+        usuario; el backend lo revalida en cada endpoint protegido con
+        requirePermission(...).
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: object
+    AuthUser:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        fullName: { type: string }
+        role:
+          type: object
+          properties:
+            key: { type: string }
+            name: { type: string }
+        permissions:
+          type: array
+          items: { type: string }
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/AuthUser' }
+    UsefulStock:
+      type: object
+      properties:
+        totalStock: { type: integer }
+        usefulStock: { type: integer, description: 'Stock que no vence dentro de la ventana de riesgo' }
+        atRiskStock: { type: integer }
+        nearestExpiry: { type: string, format: date-time, nullable: true }
+        daysToNearestExpiry: { type: integer, nullable: true }
+    Priority:
+      type: object
+      properties:
+        score: { type: integer, minimum: 0, maximum: 100 }
+        band: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+    InventoryItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        activeIngredient: { type: string }
+        manufacturer: { type: string }
+        presentation: { type: string }
+        concentration: { type: string }
+        therapeuticCategory: { type: string }
+        abcClassification: { type: string, enum: [A, B, C] }
+        venClassification: { type: string, enum: [V, E, N] }
+        storageCondition: { type: string, enum: [AMBIENT, REFRIGERATED] }
+        minimumThreshold: { type: integer }
+        maxStorageCapacity: { type: integer }
+        moq: { type: integer }
+        supplier:
+          type: object
+          nullable: true
+          properties:
+            id: { type: string }
+            name: { type: string }
+        stock: { $ref: '#/components/schemas/UsefulStock' }
+        priority: { $ref: '#/components/schemas/Priority' }
+        batchCount: { type: integer }
+    Batch:
+      type: object
+      properties:
+        id: { type: string }
+        batchNumber: { type: string }
+        expirationDate: { type: string, format: date-time }
+        availableQty: { type: integer }
+        physicalLocation: { type: string }
+    Movement:
+      type: object
+      properties:
+        id: { type: string }
+        timestamp: { type: string, format: date-time }
+        quantityDelta: { type: integer, description: 'Positivo = entrada, negativo = salida' }
+        movementType: { type: string, enum: [ENTRY, EXIT, ADJUSTMENT, RETURN, INTERNAL_TRANSFER] }
+        sourceLocation: { type: string, nullable: true }
+        destinationLocation: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        item:
+          type: object
+          properties: { id: { type: string }, name: { type: string } }
+        user:
+          type: object
+          properties: { id: { type: string }, fullName: { type: string } }
+    Alert:
+      type: object
+      properties:
+        itemId: { type: string }
+        type: { type: string, enum: [CRITICAL_STOCK, EXPIRY_RISK, COLD_CHAIN_BREACH, ANOMALOUS_CONSUMPTION] }
+        severity: { type: string, enum: [INFO, WARNING, CRITICAL] }
+        message: { type: string }
+    Recommendation:
+      type: object
+      properties:
+        itemId: { type: string }
+        itemName: { type: string }
+        triggered: { type: boolean }
+        averageDailyConsumption: { type: number, description: 'CDP' }
+        safetyStock: { type: integer, description: 'SS' }
+        reorderPoint: { type: integer, description: 'PP / ROP' }
+        usefulStock: { type: integer }
+        recommendedQty: { type: integer }
+        delivery:
+          type: object
+          properties:
+            mainDelivery: { type: integer }
+            scheduledDeliveries: { type: array, items: { type: integer } }
+        rationale: { type: string }
+        supplierId: { type: string, nullable: true }
+    PurchaseOrderLine:
+      type: object
+      properties:
+        id: { type: string }
+        item:
+          type: object
+          properties: { id: { type: string }, name: { type: string } }
+        recommendedQty: { type: integer }
+        orderedQty: { type: integer }
+        receivedQty: { type: integer }
+        unitCost: { type: number, nullable: true }
+        rationale: { type: string, nullable: true }
+    PurchaseOrder:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string, example: 'PO-2026-000123' }
+        status: { type: string, enum: [DRAFT, SUBMITTED, APPROVED, REJECTED, RECEIVED, CANCELLED] }
+        supplier:
+          type: object
+          nullable: true
+          properties: { id: { type: string }, name: { type: string } }
+        createdBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
+        approvedBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
+        rejectedBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
+        rejectionReason: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        approvedAt: { type: string, format: date-time, nullable: true }
+        receivedAt: { type: string, format: date-time, nullable: true }
+        lines:
+          type: array
+          items: { $ref: '#/components/schemas/PurchaseOrderLine' }
+    Supplier:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        contactName: { type: string, nullable: true }
+        contactEmail: { type: string, nullable: true }
+        contactPhone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        taxId: { type: string, nullable: true }
+        paymentTerms: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        leadTimeDays: { type: integer, description: 'TE — Tiempo de Entrega' }
+        isActive: { type: boolean }
+    SupplierPurchaseHistory:
+      type: object
+      properties:
+        supplierId: { type: string }
+        totalOrders: { type: integer }
+        totalUnitsOrdered: { type: integer }
+        countByStatus: { type: object, additionalProperties: { type: integer } }
+        nominalLeadTimeDays: { type: integer }
+        averageActualLeadTimeDays: { type: number, nullable: true }
+    StockReturn:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string, example: 'RET-2026-000123' }
+        quantity: { type: integer }
+        reason: { type: string, enum: [EXPIRED, DAMAGED, UNUSED, WRONG_DISPENSE, RECALL, OTHER] }
+        disposition: { type: string, nullable: true, enum: [RESTOCK, DISCARD, RETURN_TO_SUPPLIER] }
+        status: { type: string, enum: [PENDING, PROCESSED, REJECTED] }
+        sourceLocation: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        processedAt: { type: string, format: date-time, nullable: true }
+        item: { type: object, properties: { id: { type: string }, name: { type: string } } }
+        batch: { type: object, nullable: true, properties: { id: { type: string }, batchNumber: { type: string } } }
+        requestedBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
+        processedBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
+    AuditEntry:
+      type: object
+      properties:
+        id: { type: string }
+        timestamp: { type: string, format: date-time }
+        actionType: { type: string, example: 'CREATE | UPDATE | DELETE | LOGIN | APPROVE | REJECT | SUBMIT | RECEIVE' }
+        module: { type: string }
+        entity: { type: string, nullable: true }
+        entityId: { type: string, nullable: true }
+        previousValue: { type: string, nullable: true, description: 'JSON serializado' }
+        newValue: { type: string, nullable: true, description: 'JSON serializado' }
+        user:
+          type: object
+          nullable: true
+          properties: { id: { type: string }, fullName: { type: string }, email: { type: string } }
+    UserRow:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        fullName: { type: string }
+        role: { type: object, properties: { key: { type: string }, name: { type: string } } }
+        isActive: { type: boolean }
+        lastLoginAt: { type: string, format: date-time, nullable: true }
+  parameters:
+    ItemIdFilter:
+      name: itemId
+      in: query
+      schema: { type: string }
+      description: Filtra por un ítem específico
+    SearchQuery:
+      name: q
+      in: query
+      schema: { type: string }
+      description: Búsqueda de texto libre (multi-campo, contains case-insensitive en SQLite)
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Perfil del usuario autenticado (rehidratar sesión)
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthUser' }
+
+  /inventory:
+    get:
+      tags: [Inventory]
+      summary: Listar catálogo con Stock Útil y prioridad (requiere inventory:read)
+      responses:
+        '200':
+          description: Ítems ordenados por prioridad descendente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/InventoryItem' } }
+    post:
+      tags: [Inventory]
+      summary: Crear ítem (requiere inventory:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201': { description: Ítem creado }
+        '400': { description: Datos inválidos }
+  /inventory/{id}:
+    get:
+      tags: [Inventory]
+      summary: Detalle de un ítem con lotes ordenados por FEFO (requiere inventory:read)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Detalle del ítem }
+        '404': { description: No encontrado }
+    patch:
+      tags: [Inventory]
+      summary: Actualización parcial, incluye asociar proveedor (requiere inventory:manage)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Ítem actualizado }
+        '404': { description: No encontrado }
+
+  /movements:
+    get:
+      tags: [Movements]
+      summary: Libro de movimientos, con filtro por ítem y búsqueda de texto libre (requiere movements:read)
+      parameters:
+        - $ref: '#/components/parameters/ItemIdFilter'
+        - $ref: '#/components/parameters/SearchQuery'
+      responses:
+        '200':
+          description: Últimos 200 movimientos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movements: { type: array, items: { $ref: '#/components/schemas/Movement' } }
+    post:
+      tags: [Movements]
+      summary: Registrar un movimiento y ajustar el lote afectado (requiere movements:create)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId, quantityDelta, movementType]
+              properties:
+                itemId: { type: string }
+                batchId: { type: string }
+                quantityDelta: { type: integer }
+                movementType: { type: string, enum: [ENTRY, EXIT, ADJUSTMENT, RETURN, INTERNAL_TRANSFER] }
+                sourceLocation: { type: string }
+                destinationLocation: { type: string }
+                note: { type: string }
+      responses:
+        '201': { description: Movimiento registrado }
+        '409': { description: Stock insuficiente en el lote }
+
+  /alerts:
+    get:
+      tags: [Alerts]
+      summary: Evaluación en tiempo real de alertas (stock crítico, riesgo de vencimiento, consumo anómalo)
+      description: Requiere alerts:read
+      responses:
+        '200':
+          description: Alertas ordenadas por severidad
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts: { type: array, items: { $ref: '#/components/schemas/Alert' } }
+
+  /purchasing/recommendations:
+    get:
+      tags: [Purchasing]
+      summary: Corre el Motor de Compra sobre todo el catálogo (requiere purchasing:read)
+      responses:
+        '200':
+          description: Recomendaciones activas (Stock Útil <= Punto de Pedido)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recommendations: { type: array, items: { $ref: '#/components/schemas/Recommendation' } }
+                  evaluated: { type: integer }
+  /purchasing/orders:
+    get:
+      tags: [Purchasing]
+      summary: Listar órdenes de compra (requiere purchasing:read)
+      responses:
+        '200':
+          description: Órdenes, más recientes primero
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders: { type: array, items: { $ref: '#/components/schemas/PurchaseOrder' } }
+    post:
+      tags: [Purchasing]
+      summary: Genera o consolida una orden en borrador (antiduplicidad, requiere purchasing:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId, recommendedQty]
+              properties:
+                itemId: { type: string }
+                recommendedQty: { type: integer }
+                rationale: { type: string }
+                supplierId: { type: string, nullable: true }
+      responses:
+        '200': { description: 'Consolidada en una orden DRAFT existente' }
+        '201': { description: 'Nueva orden DRAFT creada' }
+  /purchasing/orders/{id}:
+    get:
+      tags: [Purchasing]
+      summary: Detalle de una orden (requiere purchasing:read)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Orden }
+        '404': { description: No encontrada }
+  /purchasing/orders/{id}/history:
+    get:
+      tags: [Purchasing]
+      summary: Historial de cambios de una orden, reconstruido desde AuditLog (requiere purchasing:read)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Historial cronológico }
+  /purchasing/orders/{id}/submit:
+    post:
+      tags: [Purchasing]
+      summary: 'DRAFT -> SUBMITTED: envía la orden a aprobación (requiere purchasing:manage)'
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Orden actualizada }
+        '409': { description: Transición no permitida desde el estado actual }
+  /purchasing/orders/{id}/approve:
+    post:
+      tags: [Purchasing]
+      summary: 'SUBMITTED -> APPROVED (requiere purchasing:approve)'
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Orden aprobada }
+        '409': { description: Transición no permitida desde el estado actual }
+  /purchasing/orders/{id}/reject:
+    post:
+      tags: [Purchasing]
+      summary: 'SUBMITTED -> REJECTED, con motivo obligatorio (requiere purchasing:approve)'
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties: { reason: { type: string } }
+      responses:
+        '200': { description: Orden rechazada }
+        '409': { description: Transición no permitida desde el estado actual }
+  /purchasing/orders/{id}/receive:
+    post:
+      tags: [Purchasing]
+      summary: >
+        Recepción física de mercadería (requiere inventory:supply). Crea o
+        actualiza el lote y registra un movimiento ENTRY por línea, en una
+        transacción; soporta recepción parcial. Sólo aplica sobre órdenes
+        APPROVED.
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lines]
+              properties:
+                lines:
+                  type: array
+                  items:
+                    type: object
+                    required: [lineId, receivedQty, batchNumber, expirationDate, physicalLocation]
+                    properties:
+                      lineId: { type: string }
+                      receivedQty: { type: integer }
+                      batchNumber: { type: string }
+                      expirationDate: { type: string, format: date }
+                      physicalLocation: { type: string }
+                      unitCost: { type: number }
+      responses:
+        '200': { description: 'Recepción registrada (orden pasa a RECEIVED si toda línea está completa)' }
+        '400': { description: 'Línea inválida o cantidad recibida supera lo pendiente' }
+        '409': { description: 'La orden no está en estado APPROVED' }
+
+  /suppliers:
+    get:
+      tags: [Suppliers]
+      summary: Listar proveedores (requiere suppliers:read)
+      parameters:
+        - name: isActive
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Proveedores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suppliers: { type: array, items: { $ref: '#/components/schemas/Supplier' } }
+    post:
+      tags: [Suppliers]
+      summary: Crear proveedor (requiere suppliers:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [name] }
+      responses:
+        '201': { description: Proveedor creado }
+  /suppliers/{id}:
+    get:
+      tags: [Suppliers]
+      summary: Detalle con ítems asociados (requiere suppliers:read)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Proveedor }
+        '404': { description: No encontrado }
+    patch:
+      tags: [Suppliers]
+      summary: Actualizar proveedor (requiere suppliers:manage)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Proveedor actualizado }
+    delete:
+      tags: [Suppliers]
+      summary: Baja lógica (isActive=false; requiere suppliers:manage)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: 'Baja realizada' }
+  /suppliers/{id}/purchase-history:
+    get:
+      tags: [Suppliers]
+      summary: Agregación de compras a este proveedor (requiere suppliers:read)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: Historial agregado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupplierPurchaseHistory' }
+
+  /returns:
+    get:
+      tags: [Returns]
+      summary: Listar devoluciones, filtro opcional por estado/ítem (requiere returns:read)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [PENDING, PROCESSED, REJECTED] }
+        - $ref: '#/components/parameters/ItemIdFilter'
+      responses:
+        '200':
+          description: Devoluciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  returns: { type: array, items: { $ref: '#/components/schemas/StockReturn' } }
+    post:
+      tags: [Returns]
+      summary: Registrar una devolución en estado PENDING (requiere returns:create)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId, quantity, reason]
+              properties:
+                itemId: { type: string }
+                batchId: { type: string }
+                quantity: { type: integer, minimum: 1 }
+                reason: { type: string, enum: [EXPIRED, DAMAGED, UNUSED, WRONG_DISPENSE, RECALL, OTHER] }
+                sourceLocation: { type: string }
+                note: { type: string }
+      responses:
+        '201': { description: Devolución registrada }
+  /returns/{id}:
+    get:
+      tags: [Returns]
+      summary: Detalle de una devolución (requiere returns:read)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Devolución }
+        '404': { description: No encontrada }
+  /returns/{id}/process:
+    post:
+      tags: [Returns]
+      summary: >
+        Decide la disposición final (requiere returns:process). RESTOCK
+        reingresa a stock (crea/actualiza lote + movimiento RETURN) en una
+        transacción; requiere batchNumber/expirationDate/physicalLocation.
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [disposition]
+              properties:
+                disposition: { type: string, enum: [RESTOCK, DISCARD, RETURN_TO_SUPPLIER] }
+                batchNumber: { type: string }
+                expirationDate: { type: string, format: date }
+                physicalLocation: { type: string }
+                note: { type: string }
+      responses:
+        '200': { description: Devolución procesada }
+        '409': { description: 'Ya fue procesada o rechazada' }
+  /returns/{id}/reject:
+    post:
+      tags: [Returns]
+      summary: Rechazar una devolución pendiente (requiere returns:process)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Devolución rechazada }
+        '409': { description: 'Ya fue procesada o rechazada' }
+
+  /audit:
+    get:
+      tags: [Audit]
+      summary: >
+        Registro de auditoría inmutable, con búsqueda de texto libre opcional
+        (requiere audit:read). No existen endpoints de escritura/borrado: la
+        tabla es append-only por diseño.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 200, maximum: 500 }
+        - $ref: '#/components/parameters/SearchQuery'
+      responses:
+        '200':
+          description: Entradas más recientes primero
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Listar usuarios (requiere users:read)
+      responses:
+        '200':
+          description: Usuarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users: { type: array, items: { $ref: '#/components/schemas/UserRow' } }
+    post:
+      tags: [Users]
+      summary: Crear usuario (requiere users:create)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, fullName, password, roleId]
+              properties:
+                email: { type: string, format: email }
+                fullName: { type: string }
+                password: { type: string, minLength: 8 }
+                roleId: { type: string }
+      responses:
+        '201': { description: Usuario creado }
+        '409': { description: 'El correo ya está registrado' }
+  /users/{id}:
+    patch:
+      tags: [Users]
+      summary: Actualizar usuario (requiere users:update)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName: { type: string }
+                roleId: { type: string }
+                isActive: { type: boolean }
+      responses:
+        '200': { description: Usuario actualizado }
+    delete:
+      tags: [Users]
+      summary: Baja lógica, preserva trazabilidad histórica (requiere users:delete)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: 'Baja realizada' }
+
+  /meta/roles:
+    get:
+      tags: [Meta]
+      summary: Catálogo de roles con sus permisos (requiere permissions:assign o users:read)
+      responses:
+        '200': { description: Roles }
+  /meta/suppliers:
+    get:
+      tags: [Meta]
+      summary: 'Atajo legado de sólo lectura para proveedores (preferir GET /suppliers)'
+      responses:
+        '200': { description: Proveedores }

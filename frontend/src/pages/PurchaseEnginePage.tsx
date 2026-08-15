@@ -4,6 +4,7 @@ import { api, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { P } from '../rbac/permissions';
 import { Badge, ErrorState, Loading } from '../components/ui';
+import { exportPurchaseOrderPdf } from '../utils/pdf';
 import type { PoStatus, PurchaseOrder, Recommendation } from '../api/types';
 
 const STATUS_LABELS: Record<PoStatus, string> = {
@@ -277,6 +278,9 @@ export function PurchaseEnginePage() {
                   <td>{o.createdBy?.fullName ?? '—'}</td>
                   <td>
                     <div className="row wrap" style={{ gap: 6 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => exportPurchaseOrderPdf(o)}>
+                        PDF
+                      </button>
                       {canManage && o.status === 'DRAFT' && (
                         <button className="btn btn-ghost btn-sm" disabled={busy === o.id} onClick={() => submit(o)}>
                           Enviar a aprobación

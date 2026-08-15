@@ -27,23 +27,28 @@ medline/
 │       ├── modules/   Rutas HTTP por módulo
 │       ├── services/  Auditoría inmutable, analítica de consumo
 │       └── db/        Cliente Prisma
-└── frontend/    SPA (React + Vite + TypeScript)
-    └── src/
-        ├── auth/        Contexto de sesión
-        ├── theme/       Modo claro/oscuro persistente
-        ├── rbac/        Catálogo de navegación y permisos (UI)
-        ├── components/  Layout dinámico, iconografía propia, UI
-        └── pages/       Login, Panel, Inventario, Motor de Compra, etc.
+├── frontend/    SPA (React + Vite + TypeScript)
+│   └── src/
+│       ├── auth/        Contexto de sesión
+│       ├── theme/       Modo claro/oscuro persistente
+│       ├── rbac/        Catálogo de navegación y permisos (UI)
+│       ├── components/  Layout dinámico, iconografía propia, UI
+│       ├── hooks/       Hooks reutilizables (debounce, etc.)
+│       ├── utils/       Export a PDF (jsPDF)
+│       └── pages/       Login, Panel, Inventario, Motor de Compra, etc.
+└── e2e/         Tests end-to-end (Playwright) sobre los flujos críticos
 ```
 
 ## Stack
 
-| Capa      | Tecnología                                             |
-| --------- | ------------------------------------------------------ |
-| Backend   | Node 18+, Express, TypeScript, Prisma ORM              |
-| Base datos| SQLite (desarrollo) · PostgreSQL (producción)          |
-| Auth      | JWT + bcrypt, permisos por rol (RBAC)                  |
-| Frontend  | React 18, Vite, React Router, CSS propio (sin UI kits) |
+| Capa      | Tecnología                                                        |
+| --------- | ------------------------------------------------------------------ |
+| Backend   | Node 18+, Express, TypeScript, Prisma ORM                         |
+| Base datos| SQLite (desarrollo) · PostgreSQL (producción)                     |
+| Auth      | JWT + bcrypt, permisos por rol (RBAC)                              |
+| Frontend  | React 18, Vite, React Router, CSS propio (sin UI kits), Recharts, jsPDF |
+| Docs API  | OpenAPI 3 servido con Swagger UI (`/api/docs`)                    |
+| Tests     | Vitest (unitarios de dominio) · Playwright (E2E de flujos críticos)|
 
 ## Puesta en marcha
 
@@ -65,7 +70,9 @@ npm run dev               # SPA en http://localhost:5173
 ```
 
 El frontend hace proxy de `/api` al backend, así que basta con abrir
-`http://localhost:5173`.
+`http://localhost:5173`. La documentación interactiva de la API (Swagger UI)
+queda disponible en `http://localhost:4000/api/docs` (spec cruda en
+`/api/docs.json`).
 
 ## Usuarios de demostración
 
@@ -86,9 +93,26 @@ sus permisos autorizan (la navegación se renderiza dinámicamente).
 ```bash
 npm run typecheck              # typecheck de backend + frontend
 npm run build                  # build de producción de ambos
+npm run test                   # tests unitarios del dominio (Vitest, backend)
 npm run db:seed --workspace backend   # re-sembrar datos de demo
 npm run db:reset --workspace backend  # reiniciar la base (¡borra datos!)
 ```
+
+### Tests end-to-end (Playwright)
+
+```bash
+cd e2e
+npm install
+npx playwright test            # resetea+siembra la DB y levanta ambos servidores
+```
+
+La suite cubre RBAC de navegación (incluida la regresión de Depósito viendo
+Motor de Compra), el ciclo completo de una orden de compra
+(`DRAFT → SUBMITTED → APPROVED → RECEIVED` a través de los tres roles que lo
+autorizan) y el flujo de devoluciones (registrar → procesar). Requiere
+`backend/.env` ya configurado (ver arriba) y usa el Chromium preinstalado del
+entorno remoto (`PLAYWRIGHT_CHROMIUM_PATH` para sobreescribirlo en otro
+entorno).
 
 ## Verificación funcional realizada
 
@@ -99,6 +123,13 @@ npm run db:reset --workspace backend  # reiniciar la base (¡borra datos!)
 - ✅ Consolidación antiduplicidad de órdenes de compra (sección 9.3).
 - ✅ Navegación dinámica por rol (módulos no permitidos omitidos del DOM).
 - ✅ Modo claro / oscuro persistente.
+- ✅ Devoluciones: RESTOCK reingresa a stock (lote + movimiento reales).
+- ✅ Órdenes de compra: ciclo completo `DRAFT → SUBMITTED → APPROVED → RECEIVED`,
+  con recepción parcial y over-receipt rechazado.
+- ✅ Búsqueda de texto libre en Movimientos y Auditoría.
+- ✅ Export a PDF de auditoría y de órdenes de compra (verificado con PDFs
+  reales generados en un flujo E2E).
+- ✅ 44 tests unitarios de dominio + 6 tests E2E de flujos críticos, todos en verde.
 
 ## Estado y próximos pasos
 
@@ -119,8 +150,25 @@ npm run db:reset --workspace backend  # reiniciar la base (¡borra datos!)
   corrigió el gate de navegación de "Motor de Compra" para incluir al rol de
   Depósito (`inventory:supply`), que antes no podía llegar a la pantalla desde
   la que recibe mercadería.
+- **Fase 4 (calidad y observabilidad)** agregó:
+  - **Búsqueda de texto libre** en Movimientos y Auditoría (`?q=`, multi-campo).
+  - **Gráficos** (Recharts) en el Panel: distribución de inventario por
+    prioridad, alertas por severidad y órdenes de compra por estado —
+    activados por el permiso del recurso subyacente, no sólo `analytics:read`.
+  - **Export a PDF** (jsPDF): reporte de auditoría filtrado y documento formal
+    por orden de compra.
+  - **Tests unitarios** (Vitest) de todo `backend/src/domain/` (clasificación,
+    FEFO/Stock Útil, Motor de Compra, alertas, devoluciones) — 44 tests.
+  - **Tests E2E** (Playwright, paquete `e2e/`) sobre RBAC de navegación, el
+    ciclo completo de una orden de compra y el flujo de devoluciones.
+  - **Documentación OpenAPI/Swagger** de toda la API en `/api/docs`.
 
-Las siguientes fases previstas incluyen: integración interhospitalaria
-(sección 10), integración de cadena de frío por hardware, EOQ con costos
-(modelo de Wilson) y capas de IA para pronóstico de demanda. El diseño modular
-permite incorporarlas sin reescribir el núcleo.
+Próximos pasos identificados y **fuera de alcance de esta fase** por requerir
+definición de producto o de integración externa antes de implementarse:
+**WebSockets** para notificaciones en tiempo real, un módulo nuevo de
+**Historia Clínica** (versionado de cambios incluido) y **sincronización
+bidireccional con un HIS** (se prevé una capa de adaptador/mock primero, hasta
+tener un HIS real y su protocolo). También quedan pendientes: integración
+interhospitalaria (sección 10), integración de cadena de frío por hardware,
+EOQ con costos (modelo de Wilson) y capas de IA para pronóstico de demanda. El
+diseño modular permite incorporar todo esto sin reescribir el núcleo.

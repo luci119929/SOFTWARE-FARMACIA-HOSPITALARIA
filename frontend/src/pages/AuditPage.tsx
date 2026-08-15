@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { useApi } from '../api/useApi';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { exportTableToPdf } from '../utils/pdf';
 import { Badge, ErrorState, Loading } from '../components/ui';
 import type { AuditEntry } from '../api/types';
 
@@ -19,8 +22,29 @@ function tryParse(s: string): string {
   }
 }
 
+function exportAuditPdf(entries: AuditEntry[], search: string) {
+  exportTableToPdf({
+    title: 'Reporte de Auditoría',
+    subtitle: search ? `Filtro: "${search}" · ${entries.length} registros` : `${entries.length} registros`,
+    columns: ['Fecha/Hora', 'Usuario', 'Acción', 'Módulo', 'Entidad', 'Cambio'],
+    rows: entries.map((e) => [
+      new Date(e.timestamp).toLocaleString('es'),
+      e.user?.fullName ?? 'sistema',
+      e.actionType,
+      e.module,
+      e.entity ?? '—',
+      formatDelta(e.previousValue, e.newValue),
+    ]),
+    filename: `auditoria-${new Date().toISOString().slice(0, 10)}.pdf`,
+  });
+}
+
 export function AuditPage() {
-  const { data, loading, error } = useApi<{ entries: AuditEntry[] }>('/audit');
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
+  const { data, loading, error } = useApi<{ entries: AuditEntry[] }>(
+    debouncedSearch ? `/audit?q=${encodeURIComponent(debouncedSearch)}` : '/audit'
+  );
 
   return (
     <div className="page">
@@ -29,6 +53,20 @@ export function AuditPage() {
         <p className="page-sub">
           Bitácora inmutable (append-only). Ningún usuario —incluido el Administrador— puede modificar o eliminar registros.
         </p>
+      </div>
+
+      <div className="row wrap between" style={{ marginBottom: 16, gap: 12 }}>
+        <input
+          style={{ maxWidth: 320 }}
+          placeholder="Buscar por módulo, entidad, usuario, acción, valor…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {data && data.entries.length > 0 && (
+          <button className="btn btn-ghost btn-sm" onClick={() => exportAuditPdf(data.entries, search)}>
+            Exportar PDF
+          </button>
+        )}
       </div>
 
       {loading && <Loading />}

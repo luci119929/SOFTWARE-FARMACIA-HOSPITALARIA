@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../api/useApi';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { P } from '../rbac/permissions';
 import { Badge, ErrorState, Loading } from '../components/ui';
 import type { InventoryItem, Movement } from '../api/types';
@@ -16,7 +17,11 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function MovementsPage() {
   const { can } = useAuth();
-  const movements = useApi<{ movements: Movement[] }>('/movements');
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
+  const movements = useApi<{ movements: Movement[] }>(
+    debouncedSearch ? `/movements?q=${encodeURIComponent(debouncedSearch)}` : '/movements'
+  );
   const inventory = useApi<{ items: InventoryItem[] }>('/inventory');
   const canCreate = can(P.MOVEMENTS_CREATE);
 
@@ -101,7 +106,15 @@ export function MovementsPage() {
         )}
 
         <div style={{ gridColumn: canCreate ? 'auto' : '1 / -1' }}>
-          <h2 style={{ fontSize: '1.05rem' }}>Historial reciente</h2>
+          <div className="row between wrap" style={{ marginBottom: 12, gap: 12 }}>
+            <h2 style={{ fontSize: '1.05rem', margin: 0 }}>Historial reciente</h2>
+            <input
+              style={{ maxWidth: 260 }}
+              placeholder="Buscar por medicamento, usuario, nota…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           {movements.loading && <Loading />}
           {movements.error && <ErrorState message={movements.error} />}
           {movements.data && (

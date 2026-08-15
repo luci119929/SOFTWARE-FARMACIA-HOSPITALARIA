@@ -33,3 +33,9 @@ Thumbs.db
 
 # Coverage
 coverage/
+
+# Playwright (e2e)
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/.cache/

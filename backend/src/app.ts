@@ -1,5 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'node:fs';
+import path from 'node:path';
+import yaml from 'js-yaml';
+import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
 import { authRouter } from './modules/auth.routes';
 import { inventoryRouter } from './modules/inventory.routes';
@@ -19,6 +23,15 @@ export function createApp() {
   app.use(express.json());
 
   app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'medline-api' }));
+
+  // Documentación OpenAPI (Swagger UI). El archivo fuente vive en la raíz del
+  // paquete backend/; se resuelve vía cwd porque los scripts npm (dev/start)
+  // siempre corren con cwd=backend/, en dev y en producción por igual.
+  const openApiSpec = yaml.load(
+    fs.readFileSync(path.resolve(process.cwd(), 'openapi.yaml'), 'utf8')
+  ) as Record<string, unknown>;
+  app.get('/api/docs.json', (_req, res) => res.json(openApiSpec));
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
   app.use('/api/auth', authRouter);
   app.use('/api/inventory', inventoryRouter);

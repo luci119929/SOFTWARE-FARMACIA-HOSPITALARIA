@@ -10,14 +10,34 @@ export const movementsRouter = Router();
 
 movementsRouter.use(authenticate);
 
-// GET /movements — libro de movimientos (con filtro opcional por ítem).
+// GET /movements — libro de movimientos (filtro opcional por ítem y búsqueda
+// de texto libre sobre medicamento, usuario, nota, tipo y ubicaciones).
+// Nota de portabilidad: `contains` es case-insensitive en SQLite (desarrollo)
+// por defecto; en Postgres (producción) sería case-sensitive salvo que se
+// reactive `mode: 'insensitive'` (no soportado por el conector de SQLite).
 movementsRouter.get(
   '/',
   requirePermission(PERMISSIONS.MOVEMENTS_READ),
   async (req, res) => {
     const itemId = typeof req.query.itemId === 'string' ? req.query.itemId : undefined;
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : undefined;
+
     const movements = await prisma.movement.findMany({
-      where: itemId ? { itemId } : undefined,
+      where: {
+        itemId,
+        ...(q
+          ? {
+              OR: [
+                { item: { name: { contains: q } } },
+                { user: { fullName: { contains: q } } },
+                { note: { contains: q } },
+                { movementType: { contains: q } },
+                { sourceLocation: { contains: q } },
+                { destinationLocation: { contains: q } },
+              ],
+            }
+          : {}),
+      },
       include: {
         item: { select: { id: true, name: true } },
         user: { select: { id: true, fullName: true } },
