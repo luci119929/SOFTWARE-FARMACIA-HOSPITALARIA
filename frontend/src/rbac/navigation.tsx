@@ -9,6 +9,7 @@ import {
   IconTruck,
   IconAudit,
   IconUsers,
+  IconReturn,
 } from '../components/icons';
 
 export interface NavModule {
@@ -60,14 +61,21 @@ export const NAV_MODULES: NavModule[] = [
     path: '/motor-compra',
     label: 'Motor de Compra',
     icon: IconEngine,
-    anyOf: [P.PURCHASING_READ, P.PURCHASING_MANAGE, P.PURCHASING_APPROVE],
+    anyOf: [P.PURCHASING_READ, P.PURCHASING_MANAGE, P.PURCHASING_APPROVE, P.INVENTORY_SUPPLY],
+  },
+  {
+    key: 'returns',
+    path: '/devoluciones',
+    label: 'Devoluciones',
+    icon: IconReturn,
+    anyOf: [P.RETURNS_READ],
   },
   {
     key: 'suppliers',
     path: '/proveedores',
     label: 'Proveedores',
     icon: IconTruck,
-    anyOf: [P.SUPPLIERS_MANAGE],
+    anyOf: [P.SUPPLIERS_READ, P.SUPPLIERS_MANAGE],
   },
   {
     key: 'audit',

@@ -4,7 +4,30 @@ import { api, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { P } from '../rbac/permissions';
 import { Badge, ErrorState, Loading } from '../components/ui';
-import type { Recommendation, PurchaseOrder } from '../api/types';
+import type { PoStatus, PurchaseOrder, Recommendation } from '../api/types';
+
+const STATUS_LABELS: Record<PoStatus, string> = {
+  DRAFT: 'Borrador',
+  SUBMITTED: 'Enviada a aprobación',
+  APPROVED: 'Aprobada',
+  REJECTED: 'Rechazada',
+  RECEIVED: 'Recibida',
+  CANCELLED: 'Cancelada',
+};
+
+function statusTone(status: PoStatus) {
+  if (status === 'APPROVED' || status === 'RECEIVED') return 'ok' as const;
+  if (status === 'SUBMITTED') return 'info' as const;
+  if (status === 'REJECTED' || status === 'CANCELLED') return 'danger' as const;
+  return 'muted' as const;
+}
+
+interface ReceiptLine {
+  receivedQty: number;
+  batchNumber: string;
+  expirationDate: string;
+  physicalLocation: string;
+}
 
 export function PurchaseEnginePage() {
   const { can } = useAuth();
@@ -15,8 +38,15 @@ export function PurchaseEnginePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const [receivingId, setReceivingId] = useState<string | null>(null);
+  const [receiptLines, setReceiptLines] = useState<Record<string, ReceiptLine>>({});
+
   const canManage = can(P.PURCHASING_MANAGE);
   const canApprove = can(P.PURCHASING_APPROVE);
+  const canReceive = can(P.INVENTORY_SUPPLY);
 
   async function createOrder(rec: Recommendation) {
     setBusy(rec.itemId);
@@ -30,12 +60,26 @@ export function PurchaseEnginePage() {
       });
       setMsg(
         res.consolidated
-          ? `Orden consolidada: se actualizó la orden abierta existente para ${rec.itemName}.`
-          : `Nueva orden de compra generada para ${rec.itemName}.`
+          ? `Orden consolidada: se actualizó la orden en borrador existente para ${rec.itemName}.`
+          : `Nueva orden de compra generada (borrador) para ${rec.itemName}.`
       );
       orders.reload();
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : 'Error al generar la orden');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function submit(order: PurchaseOrder) {
+    setBusy(order.id);
+    setMsg(null);
+    try {
+      await api.post(`/purchasing/orders/${order.id}/submit`);
+      setMsg(`Orden ${order.code} enviada a aprobación.`);
+      orders.reload();
+    } catch (e) {
+      setMsg(e instanceof ApiError ? e.message : 'Error al enviar la orden');
     } finally {
       setBusy(null);
     }
@@ -50,6 +94,68 @@ export function PurchaseEnginePage() {
       orders.reload();
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : 'Error al aprobar la orden');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function openReject(order: PurchaseOrder) {
+    setRejectingId(order.id);
+    setRejectReason('');
+    setMsg(null);
+  }
+
+  async function submitReject(order: PurchaseOrder, e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(order.id);
+    setMsg(null);
+    try {
+      await api.post(`/purchasing/orders/${order.id}/reject`, { reason: rejectReason });
+      setMsg(`Orden ${order.code} rechazada.`);
+      setRejectingId(null);
+      orders.reload();
+    } catch (e) {
+      setMsg(e instanceof ApiError ? e.message : 'Error al rechazar la orden');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function openReceive(order: PurchaseOrder) {
+    setReceivingId(order.id);
+    setMsg(null);
+    const initial: Record<string, ReceiptLine> = {};
+    for (const line of order.lines) {
+      const pending = line.orderedQty - line.receivedQty;
+      if (pending > 0) {
+        initial[line.id] = { receivedQty: pending, batchNumber: '', expirationDate: '', physicalLocation: '' };
+      }
+    }
+    setReceiptLines(initial);
+  }
+
+  function updateReceiptLine(lineId: string, patch: Partial<ReceiptLine>) {
+    setReceiptLines((prev) => ({ ...prev, [lineId]: { ...prev[lineId], ...patch } }));
+  }
+
+  async function submitReceive(order: PurchaseOrder, e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(order.id);
+    setMsg(null);
+    try {
+      const lines = Object.entries(receiptLines).map(([lineId, l]) => ({
+        lineId,
+        receivedQty: l.receivedQty,
+        batchNumber: l.batchNumber,
+        expirationDate: l.expirationDate,
+        physicalLocation: l.physicalLocation,
+      }));
+      await api.post(`/purchasing/orders/${order.id}/receive`, { lines });
+      setMsg(`Recepción registrada para la orden ${order.code}.`);
+      setReceivingId(null);
+      orders.reload();
+    } catch (e) {
+      setMsg(e instanceof ApiError ? e.message : 'Error al registrar la recepción');
     } finally {
       setBusy(null);
     }
@@ -144,7 +250,7 @@ export function PurchaseEnginePage() {
                 <th>Proveedor</th>
                 <th>Líneas</th>
                 <th>Creada por</th>
-                {canApprove && <th>Acción</th>}
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -152,41 +258,131 @@ export function PurchaseEnginePage() {
                 <tr key={o.id}>
                   <td className="mono">{o.code}</td>
                   <td>
-                    <Badge
-                      tone={o.status === 'APPROVED' ? 'ok' : o.status === 'OPEN' ? 'info' : 'muted'}
-                    >
-                      {o.status}
-                    </Badge>
+                    <Badge tone={statusTone(o.status)}>{STATUS_LABELS[o.status]}</Badge>
+                    {o.status === 'REJECTED' && o.rejectionReason && (
+                      <div className="muted" style={{ fontSize: '0.76rem', marginTop: 4 }}>{o.rejectionReason}</div>
+                    )}
                   </td>
                   <td>{o.supplier?.name ?? <span className="muted">Sin asignar</span>}</td>
                   <td>
                     {o.lines.map((l) => (
                       <div key={l.id} style={{ fontSize: '0.85rem' }}>
                         {l.item.name} · <strong>{l.orderedQty} u</strong>
+                        {o.status === 'APPROVED' || o.status === 'RECEIVED' ? (
+                          <span className="muted"> ({l.receivedQty}/{l.orderedQty} recibido)</span>
+                        ) : null}
                       </div>
                     ))}
                   </td>
                   <td>{o.createdBy?.fullName ?? '—'}</td>
-                  {canApprove && (
-                    <td>
-                      {(o.status === 'OPEN' || o.status === 'SUBMITTED') ? (
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          disabled={busy === o.id}
-                          onClick={() => approve(o)}
-                        >
-                          Aprobar
+                  <td>
+                    <div className="row wrap" style={{ gap: 6 }}>
+                      {canManage && o.status === 'DRAFT' && (
+                        <button className="btn btn-ghost btn-sm" disabled={busy === o.id} onClick={() => submit(o)}>
+                          Enviar a aprobación
                         </button>
-                      ) : (
-                        <span className="muted">—</span>
                       )}
-                    </td>
-                  )}
+                      {canApprove && o.status === 'SUBMITTED' && (
+                        <>
+                          <button className="btn btn-ghost btn-sm" disabled={busy === o.id} onClick={() => approve(o)}>
+                            Aprobar
+                          </button>
+                          <button className="btn btn-ghost btn-sm" disabled={busy === o.id} onClick={() => openReject(o)}>
+                            Rechazar
+                          </button>
+                        </>
+                      )}
+                      {canReceive && o.status === 'APPROVED' && (
+                        <button className="btn btn-ghost btn-sm" disabled={busy === o.id} onClick={() => openReceive(o)}>
+                          Registrar recepción
+                        </button>
+                      )}
+                      {!(
+                        (canManage && o.status === 'DRAFT') ||
+                        (canApprove && o.status === 'SUBMITTED') ||
+                        (canReceive && o.status === 'APPROVED')
+                      ) && <span className="muted">—</span>}
+                    </div>
+
+                    {rejectingId === o.id && (
+                      <form className="card card-pad mt-16" onSubmit={(e) => submitReject(o, e)}>
+                        <div className="field">
+                          <label>Motivo del rechazo</label>
+                          <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} required />
+                        </div>
+                        <div className="row" style={{ gap: 8 }}>
+                          <button className="btn btn-primary btn-sm" disabled={busy === o.id}>Confirmar rechazo</button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRejectingId(null)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    {receivingId === o.id && (
+                      <form className="card card-pad mt-16" onSubmit={(e) => submitReceive(o, e)}>
+                        {o.lines
+                          .filter((l) => l.orderedQty - l.receivedQty > 0)
+                          .map((l) => {
+                            const rl = receiptLines[l.id];
+                            if (!rl) return null;
+                            return (
+                              <div key={l.id} style={{ marginBottom: 14 }}>
+                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                  {l.item.name} · pendiente {l.orderedQty - l.receivedQty} u
+                                </div>
+                                <div className="row wrap" style={{ gap: 8, marginTop: 6 }}>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={l.orderedQty - l.receivedQty}
+                                    placeholder="Cantidad"
+                                    style={{ maxWidth: 110 }}
+                                    value={rl.receivedQty}
+                                    onChange={(e) => updateReceiptLine(l.id, { receivedQty: Number(e.target.value) })}
+                                    required
+                                  />
+                                  <input
+                                    placeholder="Nº de lote"
+                                    style={{ maxWidth: 140 }}
+                                    value={rl.batchNumber}
+                                    onChange={(e) => updateReceiptLine(l.id, { batchNumber: e.target.value })}
+                                    required
+                                  />
+                                  <input
+                                    type="date"
+                                    style={{ maxWidth: 160 }}
+                                    value={rl.expirationDate}
+                                    onChange={(e) => updateReceiptLine(l.id, { expirationDate: e.target.value })}
+                                    required
+                                  />
+                                  <input
+                                    placeholder="Ubicación física"
+                                    style={{ maxWidth: 160 }}
+                                    value={rl.physicalLocation}
+                                    onChange={(e) => updateReceiptLine(l.id, { physicalLocation: e.target.value })}
+                                    required
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        <div className="row" style={{ gap: 8 }}>
+                          <button className="btn btn-primary btn-sm" disabled={busy === o.id}>
+                            {busy === o.id ? 'Registrando…' : 'Confirmar recepción'}
+                          </button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setReceivingId(null)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </td>
                 </tr>
               ))}
               {orders.data.orders.length === 0 && (
                 <tr>
-                  <td colSpan={canApprove ? 6 : 5} className="muted" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 24 }}>
                     Aún no hay órdenes de compra.
                   </td>
                 </tr>

@@ -136,6 +136,8 @@ export const ROLE_PERMISSIONS: Record<RoleKey, PermissionKey[]> = {
     PERMISSIONS.LOCATIONS_MANAGE,
     PERMISSIONS.RETURNS_READ,
     PERMISSIONS.RETURNS_CREATE,
+    // Necesario para ver las órdenes APPROVED que debe recibir físicamente.
+    PERMISSIONS.PURCHASING_READ,
   ],
   PURCHASING: [
     PERMISSIONS.INVENTORY_READ,

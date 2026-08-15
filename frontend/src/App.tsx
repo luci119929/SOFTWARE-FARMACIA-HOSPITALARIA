@@ -8,6 +8,7 @@ import { MovementsPage } from './pages/MovementsPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { PurchaseEnginePage } from './pages/PurchaseEnginePage';
 import { SuppliersPage } from './pages/SuppliersPage';
+import { ReturnsPage } from './pages/ReturnsPage';
 import { AuditPage } from './pages/AuditPage';
 import { UsersPage } from './pages/UsersPage';
 import { P } from './rbac/permissions';
@@ -77,15 +78,23 @@ export default function App() {
         <Route
           path="/motor-compra"
           element={
-            <Guard anyOf={[P.PURCHASING_READ, P.PURCHASING_MANAGE, P.PURCHASING_APPROVE]}>
+            <Guard anyOf={[P.PURCHASING_READ, P.PURCHASING_MANAGE, P.PURCHASING_APPROVE, P.INVENTORY_SUPPLY]}>
               <PurchaseEnginePage />
+            </Guard>
+          }
+        />
+        <Route
+          path="/devoluciones"
+          element={
+            <Guard anyOf={[P.RETURNS_READ]}>
+              <ReturnsPage />
             </Guard>
           }
         />
         <Route
           path="/proveedores"
           element={
-            <Guard anyOf={[P.SUPPLIERS_MANAGE]}>
+            <Guard anyOf={[P.SUPPLIERS_READ, P.SUPPLIERS_MANAGE]}>
               <SuppliersPage />
             </Guard>
           }

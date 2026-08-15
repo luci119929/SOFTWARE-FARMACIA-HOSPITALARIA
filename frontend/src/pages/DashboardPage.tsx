@@ -95,7 +95,9 @@ function InventorySummary() {
 function PurchasingSummary() {
   const recs = useApi<{ recommendations: Recommendation[]; evaluated: number }>('/purchasing/recommendations');
   const orders = useApi<{ orders: PurchaseOrder[] }>('/purchasing/orders');
-  const openOrders = (orders.data?.orders ?? []).filter((o) => o.status === 'OPEN').length;
+  const openOrders = (orders.data?.orders ?? []).filter(
+    (o) => o.status === 'DRAFT' || o.status === 'SUBMITTED' || o.status === 'APPROVED'
+  ).length;
 
   return (
     <Section title="Motor de Compra" action={<Link className="btn btn-ghost btn-sm" to="/motor-compra">Abrir motor</Link>}>

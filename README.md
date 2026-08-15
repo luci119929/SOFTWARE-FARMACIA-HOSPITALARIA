@@ -102,8 +102,25 @@ npm run db:reset --workspace backend  # reiniciar la base (¡borra datos!)
 
 ## Estado y próximos pasos
 
-Esta base cubre la **Fase 1**. Las siguientes fases previstas incluyen:
-integración interhospitalaria (sección 10), logística inversa (sección 11),
-integración de cadena de frío por hardware, EOQ con costos (modelo de Wilson) y
-capas de IA para pronóstico de demanda. El diseño modular permite incorporarlas
-sin reescribir el núcleo.
+- **Fase 1** cubrió la base estructural: RBAC, inventario/FEFO, Motor de Compra,
+  auditoría y las pantallas centrales.
+- **Fase 2 (backend)** agregó devoluciones/logística inversa (sección 11),
+  el flujo de aprobación formal de órdenes de compra
+  (`DRAFT → SUBMITTED → APPROVED/REJECTED → RECEIVED`, con `CANCELLED` desde
+  cualquier estado no terminal), recepción física de mercadería (crea/actualiza
+  lotes y movimientos `ENTRY` reales) y gestión completa de proveedores
+  (CRUD + historial de compras por proveedor).
+- **Fase 3 (frontend)** puso al día la SPA con todo lo anterior: pantalla de
+  **Devoluciones** (registrar, procesar con disposición RESTOCK/DISCARD/
+  RETURN_TO_SUPPLIER, o rechazar), **Proveedores** con alta/edición/baja e
+  historial de compras por proveedor, y el **Motor de Compra** ahora soporta
+  el ciclo de vida completo de una orden (enviar a aprobación, aprobar,
+  rechazar con motivo, registrar recepción parcial/total por lote). También se
+  corrigió el gate de navegación de "Motor de Compra" para incluir al rol de
+  Depósito (`inventory:supply`), que antes no podía llegar a la pantalla desde
+  la que recibe mercadería.
+
+Las siguientes fases previstas incluyen: integración interhospitalaria
+(sección 10), integración de cadena de frío por hardware, EOQ con costos
+(modelo de Wilson) y capas de IA para pronóstico de demanda. El diseño modular
+permite incorporarlas sin reescribir el núcleo.

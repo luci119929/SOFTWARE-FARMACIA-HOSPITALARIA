@@ -53,22 +53,72 @@ export interface Recommendation {
   supplierId: string | null;
 }
 
+export type PoStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'RECEIVED' | 'CANCELLED';
+
 export interface PurchaseOrder {
   id: string;
   code: string;
-  status: string;
+  status: PoStatus;
   supplier: { id: string; name: string } | null;
   createdBy: { id: string; fullName: string } | null;
   approvedBy: { id: string; fullName: string } | null;
+  rejectedBy: { id: string; fullName: string } | null;
+  rejectionReason: string | null;
   createdAt: string;
   approvedAt: string | null;
+  receivedAt: string | null;
   lines: {
     id: string;
     item: { id: string; name: string };
     recommendedQty: number;
     orderedQty: number;
+    receivedQty: number;
     rationale: string | null;
   }[];
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  address: string | null;
+  taxId: string | null;
+  paymentTerms: string | null;
+  notes: string | null;
+  leadTimeDays: number;
+  isActive: boolean;
+}
+
+export interface SupplierPurchaseHistory {
+  supplierId: string;
+  totalOrders: number;
+  totalUnitsOrdered: number;
+  countByStatus: Record<string, number>;
+  nominalLeadTimeDays: number;
+  averageActualLeadTimeDays: number | null;
+}
+
+export type ReturnReason = 'EXPIRED' | 'DAMAGED' | 'UNUSED' | 'WRONG_DISPENSE' | 'RECALL' | 'OTHER';
+export type ReturnDisposition = 'RESTOCK' | 'DISCARD' | 'RETURN_TO_SUPPLIER';
+export type ReturnStatus = 'PENDING' | 'PROCESSED' | 'REJECTED';
+
+export interface StockReturn {
+  id: string;
+  code: string;
+  quantity: number;
+  reason: ReturnReason;
+  disposition: ReturnDisposition | null;
+  status: ReturnStatus;
+  sourceLocation: string | null;
+  note: string | null;
+  createdAt: string;
+  processedAt: string | null;
+  item: { id: string; name: string };
+  batch: { id: string; batchNumber: string } | null;
+  requestedBy: { id: string; fullName: string } | null;
+  processedBy: { id: string; fullName: string } | null;
 }
 
 export interface Movement {

@@ -19,6 +19,10 @@ export const P = {
   PURCHASING_READ: 'purchasing:read',
   PURCHASING_MANAGE: 'purchasing:manage',
   PURCHASING_APPROVE: 'purchasing:approve',
+  SUPPLIERS_READ: 'suppliers:read',
   SUPPLIERS_MANAGE: 'suppliers:manage',
   AUDIT_READ: 'audit:read',
+  RETURNS_READ: 'returns:read',
+  RETURNS_CREATE: 'returns:create',
+  RETURNS_PROCESS: 'returns:process',
 } as const;

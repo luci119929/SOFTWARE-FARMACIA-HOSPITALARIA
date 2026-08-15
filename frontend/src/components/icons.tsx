@@ -128,3 +128,12 @@ export function IconPill({ size }: IconProps) {
     </svg>
   );
 }
+
+export function IconReturn({ size }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M3 11a8 8 0 1 1 2.6 5.9" />
+      <path d="M3 5v6h6" />
+    </svg>
+  );
+}
