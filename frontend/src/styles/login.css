@@ -10,10 +10,10 @@
   position: relative;
   background: linear-gradient(135deg, var(--brand-indigo) 0%, var(--brand-indigo) 40%, #0a7d66 80%, var(--brand-mint) 130%);
   color: #fff;
-  padding: 56px 52px;
+  padding: 40px 44px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: hidden;
 }
 .login-hero::after {
