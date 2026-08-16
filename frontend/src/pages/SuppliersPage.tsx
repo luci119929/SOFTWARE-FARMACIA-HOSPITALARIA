@@ -118,7 +118,6 @@ export function SuppliersPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Proveedores</h1>
-        <p className="page-sub">Datos logísticos que alimentan el Motor de Compra (Tiempo de Entrega) e historial de compras.</p>
       </div>
 
       <div className="grid-2">

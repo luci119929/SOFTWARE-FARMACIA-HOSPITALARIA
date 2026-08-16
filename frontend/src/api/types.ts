@@ -159,6 +159,8 @@ export interface Patient {
   fullName: string;
   dateOfBirth: string;
   sex: PatientSex;
+  weightKg: number | null;
+  heightM: number | null;
   allergies: string | null;
   notes: string | null;
   entries?: ClinicalHistoryEntry[];
@@ -173,6 +175,9 @@ export interface ClinicalHistoryEntry {
   title: string;
   description: string;
   relatedItem: { id: string; name: string } | null;
+  dose: string | null;
+  frequency: string | null;
+  startDate: string | null;
   version: number;
   createdBy: { id: string; fullName: string } | null;
   updatedBy: { id: string; fullName: string } | null;
@@ -186,6 +191,9 @@ export interface ClinicalHistoryVersion {
   entryType: ClinicalEntryType;
   title: string;
   description: string;
+  dose: string | null;
+  frequency: string | null;
+  startDate: string | null;
   changedBy: { id: string; fullName: string };
   changedAt: string;
 }

@@ -43,7 +43,6 @@ export function UsersPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Usuarios y Roles</h1>
-        <p className="page-sub">Gestión de identidades y permisos (RBAC).</p>
       </div>
 
       <div className="grid-2">

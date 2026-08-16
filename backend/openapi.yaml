@@ -276,8 +276,10 @@ components:
         fullName: { type: string }
         dateOfBirth: { type: string, format: date-time }
         sex: { type: string, enum: [M, F, X] }
+        weightKg: { type: number, nullable: true, description: 'Peso (kg)' }
+        heightM: { type: number, nullable: true, description: 'Altura (m)' }
         allergies: { type: string, nullable: true }
-        notes: { type: string, nullable: true }
+        notes: { type: string, nullable: true, description: 'Observaciones clínicas importantes' }
     ClinicalHistoryEntry:
       type: object
       properties:
@@ -287,6 +289,9 @@ components:
         title: { type: string }
         description: { type: string }
         relatedItem: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string } } }
+        dose: { type: string, nullable: true, description: 'Sólo si entryType=PRESCRIPTION, p.ej. "50 mg"' }
+        frequency: { type: string, nullable: true, description: 'Sólo si entryType=PRESCRIPTION, p.ej. "1 vez al día"' }
+        startDate: { type: string, format: date-time, nullable: true, description: 'Desde cuándo lo toma' }
         version: { type: integer, description: 'Se incrementa en cada edición' }
         createdBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
         updatedBy: { type: object, nullable: true, properties: { id: { type: string }, fullName: { type: string } } }
@@ -301,6 +306,9 @@ components:
         entryType: { type: string }
         title: { type: string }
         description: { type: string }
+        dose: { type: string, nullable: true }
+        frequency: { type: string, nullable: true }
+        startDate: { type: string, format: date-time, nullable: true }
         changedBy: { type: object, properties: { id: { type: string }, fullName: { type: string } } }
         changedAt: { type: string, format: date-time }
   parameters:
@@ -839,6 +847,8 @@ paths:
                 fullName: { type: string }
                 dateOfBirth: { type: string, format: date }
                 sex: { type: string, enum: [M, F, X] }
+                weightKg: { type: number, nullable: true }
+                heightM: { type: number, nullable: true }
                 allergies: { type: string }
                 notes: { type: string }
       responses:
@@ -891,6 +901,9 @@ paths:
                 title: { type: string }
                 description: { type: string }
                 relatedItemId: { type: string, nullable: true, description: 'Medicamento prescripto, si aplica' }
+                dose: { type: string, nullable: true, description: 'Sólo PRESCRIPTION, p.ej. "50 mg"' }
+                frequency: { type: string, nullable: true, description: 'Sólo PRESCRIPTION, p.ej. "1 vez al día"' }
+                startDate: { type: string, format: date, nullable: true, description: 'Sólo PRESCRIPTION' }
       responses:
         '201': { description: Entrada creada }
         '404': { description: Paciente no encontrado }
@@ -912,6 +925,9 @@ paths:
                 title: { type: string }
                 description: { type: string }
                 relatedItemId: { type: string, nullable: true }
+                dose: { type: string, nullable: true }
+                frequency: { type: string, nullable: true }
+                startDate: { type: string, format: date, nullable: true }
       responses:
         '200': { description: Entrada actualizada }
         '404': { description: No encontrada }

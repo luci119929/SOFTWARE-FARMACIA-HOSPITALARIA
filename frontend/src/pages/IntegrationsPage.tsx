@@ -40,10 +40,6 @@ export function IntegrationsPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Integraciones</h1>
-        <p className="page-sub">
-          Costura hacia el Sistema de Información Hospitalaria (HIS). Hoy corre contra un
-          adaptador simulado — sin HIS real configurado — listo para reemplazar por uno real.
-        </p>
       </div>
 
       <div className="card card-pad" style={{ maxWidth: 560 }}>

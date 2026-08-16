@@ -56,9 +56,6 @@ export function DashboardPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Hola, {user.fullName.split(' ')[0]} 👋</h1>
-        <p className="page-sub">
-          Panel de {user.role.name}. Vista adaptada a tus permisos.
-        </p>
       </div>
 
       {/* Farmacéutico / operativo: alertas, stock, movimientos */}

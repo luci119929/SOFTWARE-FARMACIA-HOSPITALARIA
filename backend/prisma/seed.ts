@@ -309,8 +309,10 @@ async function main() {
       fullName: 'Rosa Martínez',
       dateOfBirth: new Date('1958-03-12'),
       sex: 'F',
+      weightKg: 78,
+      heightM: 1.62,
       allergies: 'Penicilina',
-      notes: 'Paciente ambulatoria, control de diabetes tipo 2.',
+      notes: 'Paciente ambulatoria, control de diabetes tipo 2 e hipertensión.',
     },
     update: {},
   });
@@ -330,10 +332,31 @@ async function main() {
     await prisma.clinicalHistoryEntry.create({
       data: {
         patientId: patient.id,
+        entryType: 'DIAGNOSIS',
+        title: 'Hipertensión arterial',
+        description: 'Controlada con medicación. Seguimiento trimestral.',
+        createdById: pharmacistId,
+      },
+    });
+    await prisma.clinicalHistoryEntry.create({
+      data: {
+        patientId: patient.id,
         entryType: 'PRESCRIPTION',
         title: 'Insulina NPH 100UI/mL',
-        description: '10 UI subcutáneas cada 12 horas.',
+        description: 'Subcutánea, aplicar rotando el sitio de inyección.',
         relatedItemId: 'seed-item-insulina',
+        dose: '10 UI',
+        frequency: 'Cada 12 horas',
+        startDate: addDays(-540),
+        createdById: pharmacistId,
+      },
+    });
+    await prisma.clinicalHistoryEntry.create({
+      data: {
+        patientId: patient.id,
+        entryType: 'NOTE',
+        title: 'Antecedente quirúrgico',
+        description: 'Colecistectomía laparoscópica (2019), sin complicaciones.',
         createdById: pharmacistId,
       },
     });

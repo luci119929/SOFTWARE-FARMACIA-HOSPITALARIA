@@ -62,7 +62,6 @@ export function MovementsPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Movimientos</h1>
-        <p className="page-sub">Libro transaccional del inventario (event-driven).</p>
       </div>
 
       <div className="grid-2">

@@ -50,9 +50,6 @@ export function AuditPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Registro de Auditoría</h1>
-        <p className="page-sub">
-          Bitácora inmutable (append-only). Ningún usuario —incluido el Administrador— puede modificar o eliminar registros.
-        </p>
       </div>
 
       <div className="row wrap between" style={{ marginBottom: 16, gap: 12 }}>

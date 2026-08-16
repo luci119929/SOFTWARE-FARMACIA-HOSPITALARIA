@@ -31,9 +31,6 @@ export function InventoryPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Inventario</h1>
-        <p className="page-sub">
-          Trazabilidad por lote, Stock Útil (excluye lo próximo a vencer) y prioridad ABC + VEN + FEFO.
-        </p>
       </div>
 
       <div className="row wrap" style={{ marginBottom: 16, gap: 12 }}>

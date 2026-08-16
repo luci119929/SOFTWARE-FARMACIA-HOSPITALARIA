@@ -166,10 +166,6 @@ export function PurchaseEnginePage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Motor de Compra Inteligente</h1>
-        <p className="page-sub">
-          Determina qué, cuándo y cuánto comprar. Evalúa el Stock Útil contra el
-          Punto de Pedido (PP = CDP × TE + SS) y consolida órdenes para evitar duplicados.
-        </p>
       </div>
 
       {msg && (

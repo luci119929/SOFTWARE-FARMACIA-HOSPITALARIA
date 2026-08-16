@@ -17,7 +17,6 @@ export function AlertsPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Alertas</h1>
-        <p className="page-sub">Evaluación en tiempo real: stock crítico, vencimientos y consumo anómalo.</p>
       </div>
 
       {loading && <Loading />}

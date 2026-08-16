@@ -56,6 +56,8 @@ const patientSchema = z.object({
   fullName: z.string().min(1),
   dateOfBirth: z.coerce.date(),
   sex: z.enum(PATIENT_SEX),
+  weightKg: z.number().positive().nullable().optional(),
+  heightM: z.number().positive().nullable().optional(),
   allergies: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -116,6 +118,10 @@ const entrySchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   relatedItemId: z.string().min(1).nullable().optional(),
+  // Sólo tienen sentido cuando entryType=PRESCRIPTION.
+  dose: z.string().nullable().optional(),
+  frequency: z.string().nullable().optional(),
+  startDate: z.coerce.date().nullable().optional(),
 });
 
 // POST /patients/:id/entries — registrar una entrada de historia clínica.
@@ -183,6 +189,9 @@ patientsRouter.patch(
           title: before.title,
           description: before.description,
           relatedItemId: before.relatedItemId,
+          dose: before.dose,
+          frequency: before.frequency,
+          startDate: before.startDate,
           changedById: req.auth!.userId,
         },
       });

@@ -274,8 +274,10 @@ model Patient {
   fullName    String
   dateOfBirth DateTime
   sex         String // PATIENT_SEX: M | F | X
+  weightKg    Float? // peso (kg)
+  heightM     Float? // altura (m)
   allergies   String? // texto libre — alergias conocidas, chequeo obligatorio antes de prescribir
-  notes       String?
+  notes       String? // observaciones clínicas importantes
   entries     ClinicalHistoryEntry[]
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
@@ -292,6 +294,10 @@ model ClinicalHistoryEntry {
   description   String
   relatedItemId String? // p.ej. el medicamento prescripto, si entryType=PRESCRIPTION
   relatedItem   Item?                    @relation(fields: [relatedItemId], references: [id])
+  // Sólo aplican cuando entryType=PRESCRIPTION (medicamento actual).
+  dose          String? // p.ej. "50 mg"
+  frequency     String? // p.ej. "1 vez al día"
+  startDate     DateTime? // desde cuándo lo toma — para calcular "hace X tiempo"
   version       Int                      @default(1) // se incrementa en cada UPDATE
   createdById   String
   createdBy     User                     @relation("ClinicalEntryCreatedBy", fields: [createdById], references: [id])
@@ -316,6 +322,9 @@ model ClinicalHistoryVersion {
   title         String
   description   String
   relatedItemId String?
+  dose          String?
+  frequency     String?
+  startDate     DateTime?
   changedById   String // quién hizo el cambio que dio origen a esta versión archivada
   changedBy     User                 @relation("ClinicalVersionChangedBy", fields: [changedById], references: [id])
   changedAt     DateTime             @default(now())

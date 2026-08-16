@@ -43,18 +43,8 @@ export function LoginPage() {
     <div className="login-wrap">
       <div className="login-hero">
         <div className="login-brand">
-          <Wordmark size={40} color="#00ffc2" />
+          <Wordmark size={64} color="#00ffc2" />
         </div>
-        <h1>Gestión inteligente de farmacia hospitalaria</h1>
-        <p>
-          Middleware de trazabilidad, clasificación ABC/VEN, control FEFO y un
-          Motor de Compra que decide qué, cuándo y cuánto reponer.
-        </p>
-        <ul className="login-points">
-          <li>Control de acceso basado en roles (RBAC)</li>
-          <li>Stock útil, alertas y auditoría inmutable</li>
-          <li>Reposición automatizada y consolidación de órdenes</li>
-        </ul>
       </div>
 
       <div className="login-panel">

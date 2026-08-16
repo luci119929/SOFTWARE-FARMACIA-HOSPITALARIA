@@ -123,10 +123,6 @@ export function ReturnsPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Devoluciones</h1>
-        <p className="page-sub">
-          Logística inversa: registra devoluciones de stock y decide su disposición final
-          (reingreso, descarte o devolución al proveedor).
-        </p>
       </div>
 
       <div className="grid-2">
